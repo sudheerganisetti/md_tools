@@ -5,7 +5,7 @@ The main intension of these programs is to post-process the output files of the 
 
 1) 001_compute_glass_density 			: computes the density of a glass
 
-2) compute_CMAS_glass_structural_properties.py	: computes the structural properties of a CMAS glass
+2) 002_CMAS_glass_structural_properties		: computes the structural properties of a CMAS glass
 
 
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
