@@ -1,0 +1,19 @@
+# BO and NBO information
+# Total Number of Oxygen Atoms                                          = 166  
+# Total Number of Bridging Oxygen i.e Si4-O-Si4 + Si4-O-Al4 + Al4-O-Al4 = 80 	 48.19
+# Total Number of Non-Bridging Oxygen (including tri-clusters)          = 86 	 51.81
+# SiOSi 
+Si [4] O Si [4] = 24  	 14.46 
+
+# SiOAl 
+Si [4] O Al [4] = 45  	 27.11 
+Si [4] O Al [5] = 10  	 6.02 
+
+# AlOAl 
+Al [4] O Al [4] = 11  	 6.63 
+Al [4] O Al [5] = 2  	 1.20 
+# Number of NBO (excluding tri-cluster, i.e only Si-O or Al-O)    = 72   43.37 
+# Number of Si-NBO (excluding tri-cluster, i.e only Si-O )        = 53   31.93 
+# Number of Al-NBO (excluding tri-cluster, i.e only Al-O )        = 19   11.45 
+# Number of Ca atoms connected with NBO (where NBO= Si-O or Al-O) = 155   93.37 
+# Number of Mg atoms connected with NBO (where NBO= Si-O or Al-O) = 28   16.87 
