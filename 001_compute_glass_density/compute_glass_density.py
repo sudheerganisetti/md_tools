@@ -37,6 +37,7 @@ if __name__=="__main__":
     given_Mg_type=-1
     given_Sr_type=-1
     given_Na_type=-1
+    given_P_type=-1
     if "-O" in commandline:
       O_index=commandline.index("-O")
       given_O_type=int(commandline[O_index+1])
@@ -72,8 +73,13 @@ if __name__=="__main__":
       given_Na_type=int(commandline[Na_index+1])
       given_all_atoms.append("-Na")
       given_all_atom_types.append(given_Na_type)
+    if "-P" in commandline:
+      P_index=commandline.index("-P")
+      given_P_type=int(commandline[P_index+1])
+      given_all_atoms.append("-P")
+      given_all_atom_types.append(given_P_type)
 
-    atoms_we_have=set(["-O","-Si","-Al","-Ca","-Mg","-Sr","-Na"])
+    atoms_we_have=set(["-O","-Si","-Al","-Ca","-Mg","-Sr","-Na","-P"])
     given_all_atoms=set(given_all_atoms)
     if len(given_all_atoms-atoms_we_have) !=0:
       error2=1
@@ -95,6 +101,7 @@ if __name__=="__main__":
     m_Mg =24.305			# g/mol   
     m_Sr =87.62				# g/mol
     m_Na =22.989769			# g/mol
+    m_P  =30.973762			# g/mol
     MAX_TYPE=max(given_all_atom_types)
     mass_of_each_atom_of_type=[0.0 for i in range(0,MAX_TYPE+1)]
     if given_O_type != -1:
@@ -111,6 +118,8 @@ if __name__=="__main__":
       mass_of_each_atom_of_type[given_Sr_type]=m_Sr
     if given_Na_type != -1:
       mass_of_each_atom_of_type[given_Na_type]=m_Na
+    if given_P_type != -1:
+      mass_of_each_atom_of_type[given_P_type]=m_P
 
     data1=open(File1,'r')
     # Reading box header
@@ -172,6 +181,8 @@ if __name__=="__main__":
       temp1=temp1+number_of_atoms_of_type[given_Sr_type]			# SrO
     if given_Na_type != -1:
       temp1=temp1+number_of_atoms_of_type[given_Na_type]*0.5			# Na2O
+    if given_P_type != -1:
+      temp1=temp1+number_of_atoms_of_type[given_P_type]*5.0/2.0                 # P2O5
 
     if temp1 != number_of_atoms_of_type[given_O_type]:
       print "-----------------------------------------------------------------------------------------"
@@ -185,8 +196,8 @@ if __name__=="__main__":
       print "|          about this warning!                                                          |"
       print "-----------------------------------------------------------------------------------------"
 
-  if error == 1 or error1 == 1 or error2 == 1 or error3 == 1 or error4 == 1:
-     subprocess.call("sudheer_banner")
+  #if error == 1 or error1 == 1 or error2 == 1 or error3 == 1 or error4 == 1:
+  #   subprocess.call("sudheer_banner")
   if error ==1:
     print ""
     print "************* S. Ganisetti *************"
@@ -194,7 +205,7 @@ if __name__=="__main__":
     print "correct usage: ./this_program  lammps.dump -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 ..."
     print "check carefully that the atom types you have in the file is same as the atom types you are "
     print "paasing to the program through the command line above"
-    print "The data is available for O,Si,Al,Ca,Mg,Sr,Na"
+    print "The data is available for O,Si,Al,Ca,Mg,Sr,Na,P"
     print "Error could be due to the following reason(s)"
     if error1==1:
       print "  arguments passing to the program through command line are not enough"
