@@ -1,4 +1,3 @@
-# md_tools
 # Author: Sudheer Ganisetti
 
 The following tools are very useful for analysing the various properties of amorphous materials (glasses) with given atomic positions and chemical atom types.
