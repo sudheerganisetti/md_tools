@@ -6,3 +6,8 @@
 
 It produces alot of output files with various structural details
 
+You can control the following parameters
+
+Enable_phase1_calculations = yes or no
+
+Enable_phase2_calculations = yes or no
