@@ -13,5 +13,8 @@ The main intension of these programs is to post-process the output files of the 
 
 5) 005_SiO2_Al2O3_RO_TernaryPhaseDiagram	: plots the ternary phase diagram of SiO2, Al2O3 and RO
 
+6) 006_Compute_MeanSquareDisplacement		: computes the mean square displacement of each atom type
+
+
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
 
