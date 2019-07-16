@@ -7,7 +7,9 @@ The main intension of these programs is to post-process the output files of the 
 
 2) 002_compute_glass_density 			: computes the density of a glass
 
-3) 003_CMAS_glass_structural_properties		: computes the structural properties of a CMAS glass
+3) 003_CMAS_glass_structural_properties		: computes the structural properties of CMAS glass
+
+4) 004_NAPS_glass_structural_properties		: computes the structural properties of NAPS glass
 
 
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
