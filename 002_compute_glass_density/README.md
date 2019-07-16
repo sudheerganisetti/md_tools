@@ -1,3 +1,5 @@
+# Author: Sudheer Ganisetti
+
 This piece of code is used to compute the density of a glass with given atom positions and atom types in a lammps dump file format
 
 usage ./compute_glass_density.py  lammps.dump -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 ...
