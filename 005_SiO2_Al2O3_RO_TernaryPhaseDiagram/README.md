@@ -6,5 +6,6 @@ The lowest value of the property is set to blue and the highest value is set to 
 usage: ./SiO2_Al2O3_RO_TernaryPhaseDiagram.py  SiO2_Al2O3_RO_Property.data
 
 The file has the following columns
+
 SampleName    SiO2    Al2O3   RO      PropertyValue
 
