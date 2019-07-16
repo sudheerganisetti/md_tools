@@ -15,7 +15,7 @@ The main intension of these programs is to post-process the output files of the 
 
 6) 006_Compute_MeanSquareDisplacement		: computes the mean square displacement of each atom type
 
-7) 007_StructureGeneration			: generate structure by placing the atoms randomly 
+7) 007_StructureGeneration			: generate the structure of desired composition by placing the atoms randomly 
 
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
 
