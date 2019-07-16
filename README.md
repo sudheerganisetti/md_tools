@@ -11,6 +11,7 @@ The main intension of these programs is to post-process the output files of the 
 
 4) 004_NAPS_glass_structural_properties		: computes the structural properties of NAPS glass
 
+5) 005_SiO2_Al2O3_RO_TernaryPhaseDiagram	: plots the ternary phase diagram of SiO2, Al2O3 and RO
 
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
 
