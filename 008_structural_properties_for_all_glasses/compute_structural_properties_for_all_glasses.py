@@ -3,7 +3,7 @@
 @Author : Sudheer Ganisetti
 @Date   : Mo 25. Dez 18:34:13 CET 2017
 @         Do 20. Jun 20:34:10 CEST 2019
-This code is to compute nnl, nnlchk,  connectivity(Qn) and A-O-A triplets for the sample (SiO2 + Al2O3 + P2O5 + Na2O + CaO + MgO)
+This code is to compute nnl, nnlchk,  connectivity(Qn) and A-O-A triplets for the sample (SiO2 + Al2O3 + P2O5 + Na2O + CaO + MgO + CaF2)
 """
 
 import numpy as np
@@ -117,6 +117,16 @@ if __name__=="__main__":
       given_all_atom_types.append(given_Na_type)
       recognized_argvs_idex.append(Na_index)
       recognized_argvs_idex.append(Na_index+1)
+    if "-F" in commandline:
+      F_index=commandline.index("-F")
+      given_F_type=int(commandline[F_index+1])
+      atom_type['F']                   =given_F_type
+      atom_type_sym2num['F']           =given_F_type
+      atom_type_num2sym[given_Na_type]  ='F'
+      given_all_atom_types.append(given_F_type)
+      recognized_argvs_idex.append(F_index)
+      recognized_argvs_idex.append(F_index+1)
+
     # O atom type must be given
     if "O" not in atom_type_sym2num.keys():
       error1=1
@@ -214,6 +224,25 @@ if __name__=="__main__":
       bond_length_num2num[atom_type_sym2num['Sr']]      	= float(commandline[tmp_index+1])
       rc[atom_type_sym2num['Sr']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
       rc[atom_type_sym2num['O']][atom_type_sym2num['Sr']]       = float(commandline[tmp_index+1])
+      recognized_argvs_idex.append(tmp_index)
+      recognized_argvs_idex.append(tmp_index+1)
+
+
+    if "-CaF" in commandline:
+      if "Ca" not in atom_type_sym2num:
+        error1=1
+        error1_statement="Error info: Ca atom type is not given but CaF bond length is given"
+        break
+      if "F" not in atom_type_sym2num:
+        error1=1
+        error1_statement="Error info: F atom type is not given but CaF bond length is given"
+        break
+      tmp_index=commandline.index("-CaF")
+      bond_length['CaF']                                        = float(commandline[tmp_index+1])
+      bond_length_sym2num['Ca']                                 = float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Ca']]              = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Ca']][atom_type_sym2num['F']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['F']][atom_type_sym2num['Ca']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     
