@@ -244,13 +244,13 @@ if __name__=="__main__":
     
   if error1 != 0:
      ganisetti_tools.banner()
-     print("************* S. Ganisetti *************")
+     print("************************************** S. Ganisetti **************************************")
      print("Error: usage is wrong")
      print("./this_program  ChkptFile -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 -SiO 2.0 -AlO 2.0 -CaO 3.0 -MgO 3.0")
      print("The program is prepared for chemical compositions: SiO2, Al2O3, P2O5, Na2O, CaO and MgO")
      print("Please specify both atom types and the cutoff radii of all required pair of atoms")
      print("%s %s %s" %(CREDBG,str(error1_statement),CREDBGEND))
-     print("****************************************")
+     print("******************************************************************************************")
      sys.exit(0)
 
   BASE_FILE=str(sys.argv[1])
@@ -313,6 +313,39 @@ if __name__=="__main__":
         if SelectAtoms1[j] == 1:
           ganisetti_tools.write_imd_atom(output,j,config1,config1_nnl)
       output.close()
+
+  # **************************************************************************************
+  # Environment of each atom
+  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
+  for i in config1.id:
+    print(config1_env.environment_sym[i])
+
+  # **************************************************************************************
+  # coordination of each atom
+  Coord=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPE+1)]               # Coord[atom_type][coordination]
+
+  for i in config1.id:
+    Coord[config1.type[i]][config1_nnl.nnl_count[i]]=Coord[config1.type[i]][config1_nnl.nnl_count[i]]+1
+
+  output_coord1=open(BASE_FILE+str("_average_coord"),'w')
+  output_coord1.write("# Chemical_Element\tNumber_of_Atoms\tAverageCoordination\n")
+
+  MAX_LENGTH_OF_COORD=0
+  for i in atom_type_num2sym.keys():
+    avg_coord1=0
+    avg_coord2=0
+    output_coord=open(BASE_FILE+str("_")+str(atom_type_num2sym[i])+str("_coord"),'w')
+    for j in range(0,MAX_NEIGHBOURS+1):
+      output_coord.write("%d %d \n" %(j,Coord[i][j]))
+      MAX_LENGTH_OF_COORD=max(MAX_LENGTH_OF_COORD,Coord[i][j])
+      avg_coord1=avg_coord1+(j*Coord[i][j])
+      avg_coord2=avg_coord2+Coord[i][j]
+    output_coord.close()
+    if avg_coord2 != 0.0:
+      output_coord1.write("%s  %d  %lf \n" %(atom_type_num2sym[i],total_atoms_of_type_sym[atom_type_num2sym[i]],1.0*avg_coord1/avg_coord2))
+  output_coord1.close()
+
+
   '''
   # **************************************************************************************
   # writing out briding and non-bridging oxygen
@@ -378,30 +411,6 @@ if __name__=="__main__":
 
   output_BO_NBO_info_v01.close()
   '''
-  # **************************************************************************************
-  # coordination of each atom
-  Coord=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPE+1)]               # Coord[atom_type][coordination]
-
-  for i in config1.id:
-    Coord[config1.type[i]][config1_nnl.nnl_count[i]]=Coord[config1.type[i]][config1_nnl.nnl_count[i]]+1
-
-  output_coord1=open(BASE_FILE+str("_average_coord"),'w')
-  output_coord1.write("# Chemical_Element\tNumber_of_Atoms\tAverageCoordination\n")
- 
-  MAX_LENGTH_OF_COORD=0
-  for i in atom_type_num2sym.keys():
-    avg_coord1=0
-    avg_coord2=0
-    output_coord=open(BASE_FILE+str("_")+str(atom_type_num2sym[i])+str("_coord"),'w')
-    for j in range(0,MAX_NEIGHBOURS+1):
-      output_coord.write("%d %d \n" %(j,Coord[i][j]))
-      MAX_LENGTH_OF_COORD=max(MAX_LENGTH_OF_COORD,Coord[i][j])
-      avg_coord1=avg_coord1+(j*Coord[i][j])
-      avg_coord2=avg_coord2+Coord[i][j]
-    output_coord.close()
-    if avg_coord2 != 0.0:
-      output_coord1.write("%s  %d  %lf \n" %(atom_type_num2sym[i],total_atoms_of_type_sym[atom_type_num2sym[i]],1.0*avg_coord1/avg_coord2))
-  output_coord1.close()
 
   ''' 
     Coordination=[[[0 for k in range(MAX_LENGTH_OF_COORD)] for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPES+1)]  # Coordination[atom_type][coordination
@@ -425,8 +434,29 @@ nation]
             output.write("\n")
           output.close
   '''
+  #O_env={}
+  #temp_each_atom_type_count={}
+  #temp1=atom_type_sym2num.keys()
+  #for i in atom_type_sym2num.keys():
+  #  temp_each_atom_type_count[i]=i
 
+  #for i in temp_each_atom_type_count.keys():
+  #  print(temp_each_atom_type_count[i])
 
+  #for i in config1.id:
+  #  print(config1_nnl.nnl_type_sym[i].count('Si'))
+
+  #for i in config1.id:
+  #  temp_each_atom_type_count={}
+  #  temp1={'id':i,'type':config1.type[i]}
+  #  temp_each_atom_type_count.update(temp1)
+  #  for j in atom_type_sym2num.keys():
+  #    temp1={j:config1_nnl.nnl_type_sym[i].count(j)}
+  #    temp_each_atom_type_count.update(temp1)
+  #  print(temp_each_atom_type_count)
+  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
+  for i in config1.id:
+    print(config1_env.environment_sym[i])
 
 
 
