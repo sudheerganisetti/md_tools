@@ -253,21 +253,30 @@ if __name__=="__main__":
      print("******************************************************************************************")
      sys.exit(0)
 
+  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+  # main loop starts here
   BASE_FILE=str(sys.argv[1])
   LAMMPS_DUMP_FILE=BASE_FILE+str('.dump')
-
-  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)  
-  config1_nnl	= ganisetti_tools.compute_nnl(config1,rc,atom_type_num2sym)
-
   MAX_NEIGHBOURS=8
   MAX_ATOM_TYPES=8
+
+  # **************************************************************************************
+  # get the atoms information
+  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+
   MAX_ATOM_TYPE=max(config1.type.values())
 
+  # **************************************************************************************
+  # compute total atoms of each atom type
   total_atoms_of_type_sym={}
   tmp=config1.type.values()
   tmp=list(tmp)
   for i in atom_type_sym2num.keys():
     total_atoms_of_type_sym[i]=tmp.count(atom_type_sym2num[i])
+
+  # **************************************************************************************
+  # computing nnl
+  config1_nnl   = ganisetti_tools.compute_nnl(config1,rc,atom_type_num2sym)
 
   output_nnl=open(BASE_FILE+str('.nnl'),'w')
   output_nnl.write("# nnl file; used cutoffs are: ")
@@ -276,8 +285,6 @@ if __name__=="__main__":
       output_nnl.write("%s-O = %.2lf ; " %(atom_type_num2sym[i],rc[i][atom_type_sym2num['O']]))
   output_nnl.write("\n")
 
-  # **************************************************************************************
-  # writing nnl
   for i in config1.id:
     output_nnl.write("%d\t" %(i))
     for j in config1_nnl.nnl[i]:
@@ -315,148 +322,21 @@ if __name__=="__main__":
       output.close()
 
   # **************************************************************************************
-  # Environment of each atom
+  # compute environment of each atom
   config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
-  for i in config1.id:
-    print(config1_env.environment_sym[i])
 
   # **************************************************************************************
-  # coordination of each atom
-  Coord=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPE+1)]               # Coord[atom_type][coordination]
-
-  for i in config1.id:
-    Coord[config1.type[i]][config1_nnl.nnl_count[i]]=Coord[config1.type[i]][config1_nnl.nnl_count[i]]+1
-
-  output_coord1=open(BASE_FILE+str("_average_coord"),'w')
-  output_coord1.write("# Chemical_Element\tNumber_of_Atoms\tAverageCoordination\n")
-
-  MAX_LENGTH_OF_COORD=0
-  for i in atom_type_num2sym.keys():
-    avg_coord1=0
-    avg_coord2=0
-    output_coord=open(BASE_FILE+str("_")+str(atom_type_num2sym[i])+str("_coord"),'w')
-    for j in range(0,MAX_NEIGHBOURS+1):
-      output_coord.write("%d %d \n" %(j,Coord[i][j]))
-      MAX_LENGTH_OF_COORD=max(MAX_LENGTH_OF_COORD,Coord[i][j])
-      avg_coord1=avg_coord1+(j*Coord[i][j])
-      avg_coord2=avg_coord2+Coord[i][j]
-    output_coord.close()
-    if avg_coord2 != 0.0:
-      output_coord1.write("%s  %d  %lf \n" %(atom_type_num2sym[i],total_atoms_of_type_sym[atom_type_num2sym[i]],1.0*avg_coord1/avg_coord2))
-  output_coord1.close()
-
-
-  '''
-  # **************************************************************************************
-  # writing out briding and non-bridging oxygen
-  output_BO_NBO_info_v01=open(BASE_FILE+str("_BO_NBO_info_v01.data"),'w')
-  atomTypeSym_2_locallyAssignedNumber={}
-  locallyAssignedNumber_2_atomTypeSym={}
-  # We want to use an array where each column is a chemical element
-  # We could also use atom_type but this will become a very big array
-  # for example, I have elements Si(type=1), Al(2), Ca(10), Sr(20)
-  # then i have to create an array of size 20^MAX_NEIGHBORS, which is not needed
-  # so to avoid big array, we are reassiging the atom types locally
-  # i.e, Si(type=0),Al(1),Ca(2) and Sr(3)
-  # the order can be anything we always save what type is saved in what number 
-  count1=0
+  # compute coordination of each atom
+  config1_coord=ganisetti_tools.compute_coordination(config1,config1_nnl,atom_type_num2sym)
+  output1=open(BASE_FILE+str("_average_coord"),'w')
+  output1.write("# AtomType_sym  AtomType_num   Number_of_Atoms AverageCoordination\n")
   for i in atom_type_sym2num.keys():
-    if i != "O":
-      atomTypeSym_2_locallyAssignedNumber[i]=count1
-      locallyAssignedNumber_2_atomTypeSym[count1]=i
-      count1=count1+1
-  # the following is created for only given number of atoms, however, this is increasing the complexcity 
-  # to maintain the O_env array so a fixed number of MAX_NEIGHBOURS and MAX_ATOM_TYPES are used to build O_env
-  b=[]
-  for i in range(pow(MAX_ATOM_TYPES,MAX_NEIGHBOURS)):
-    b.append(0)
-  # O_env=np.reshape(np.array(b),((len(atom_type_sym2num.keys())-1),MAX_NEIGHBOURS))
-  # O_env=[[0 for i in range(MAX_NEIGHBOURS)] for j in range(MAX_ATOM_TYPES)]
-  b=np.array(b)
-  O_env=np.reshape(b,(MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS))
-  # O_env= Oxygen Environment
-  # O_env[numper_of_type0_neighbours][numper_of_type1_neighbours]..=total_such_O_atoms_in_the_sample
-  # t1=[0 for ii in range((len(atom_type_sym2num.keys())-1))]
+    output1.write("%s\t%d\t%d\t%.2lf\n" %(i,atom_type_sym2num[i],total_atoms_of_type_sym[i],config1_coord.coord_sym[i]))
+  output1.close()
 
-  # print(np.shape(O_env))
-  # print(sys.getsizeof(O_env))
-  for i in config1.id:
-    if atom_type_num2sym[config1.type[i]] == "O":
-      t1=[0 for ii in range(MAX_ATOM_TYPES)]
-      for j in range(MAX_ATOM_TYPES):
-        if j < count1:
-          t1[j]=config1_nnl.nnl_type_sym[i].count(locallyAssignedNumber_2_atomTypeSym[j])
-          # j = 0,1,2,3 the real meaning of j is in locallyAssignedNumber_2_atomTypeSym[j] i.e may be 0=Si, 1=Al etc.
-      O_env[t1[0]][t1[1]][t1[2]][t1[3]][t1[4]][t1[5]][t1[6]][t1[7]] = O_env[t1[0]][t1[1]][t1[2]][t1[3]][t1[4]][t1[5]][t1[6]][t1[7]] + 1
-  output_BO_NBO_info_v01.write("# ")
-  for i in atom_type_sym2num.keys():
-    if i != "O":
-      output_BO_NBO_info_v01.write("%s " %(i))
-  for i in range(MAX_ATOM_TYPES-len(atom_type_sym2num.keys())+1):
-      output_BO_NBO_info_v01.write("dummy ")
-  output_BO_NBO_info_v01.write("\tNumber_of_O_of_this_type \t O (total_O_atoms = %d )\n" %(total_atoms_of_type_sym['O']))
 
-  for i0 in range(MAX_NEIGHBOURS):
-    for i1 in range(MAX_NEIGHBOURS):
-      for i2 in range(MAX_NEIGHBOURS):
-        for i3 in range(MAX_NEIGHBOURS):
-          for i4 in range(MAX_NEIGHBOURS):
-            for i5 in range(MAX_NEIGHBOURS):
-              for i6 in range(MAX_NEIGHBOURS):
-                for i7 in range(MAX_NEIGHBOURS):
-                  if O_env[i0][i1][i2][i3][i4][i5][i6][i7] != 0:
-                     temp_O1=O_env[i0][i1][i2][i3][i4][i5][i6][i7]
-                     temp_O2=temp_O1/total_atoms_of_type_sym['O']*100.0
-                     output_BO_NBO_info_v01.write("  %d  %d  %d  %d  %d  %d  %d  %d \t%d\t%.2lf\n" %(i0,i1,i2,i3,i4,i5,i6,i7,temp_O1,temp_O2))
 
-  output_BO_NBO_info_v01.close()
-  '''
 
-  ''' 
-    Coordination=[[[0 for k in range(MAX_LENGTH_OF_COORD)] for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPES+1)]  # Coordination[atom_type][coordination
-][count] = atom_id
-    Coordination_count=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPES+1)]                                  # Coordination_count[atom_type][coordi
-nation]
-    for i in range(TotalAtoms):
-      Coordination[atom_type[i]][nnl_count[i]][Coordination_count[atom_type[i]][nnl_count[i]]]=i
-      Coordination_count[atom_type[i]][nnl_count[i]]=Coordination_count[atom_type[i]][nnl_count[i]]+1
-
-    for i in range(1,MAX_ATOM_TYPES+1):
-      for j in range(MAX_NEIGHBOURS+1):
-        if Coord[i][j] !=0:
-          output=open(BASE_FILE+str("_")+str(atype[i])+str("_")+str(j)+str("_coord.atomsid"),'w')
-          for k in range(Coordination_count[i][j]):
-            l=Coordination[i][j][k]
-            output.write("%d  " %(atom_global_id[l]))
-            for m in nnl[l]:
-              if m != -1:
-                output.write("%d  " %(atom_global_id[m]))
-            output.write("\n")
-          output.close
-  '''
-  #O_env={}
-  #temp_each_atom_type_count={}
-  #temp1=atom_type_sym2num.keys()
-  #for i in atom_type_sym2num.keys():
-  #  temp_each_atom_type_count[i]=i
-
-  #for i in temp_each_atom_type_count.keys():
-  #  print(temp_each_atom_type_count[i])
-
-  #for i in config1.id:
-  #  print(config1_nnl.nnl_type_sym[i].count('Si'))
-
-  #for i in config1.id:
-  #  temp_each_atom_type_count={}
-  #  temp1={'id':i,'type':config1.type[i]}
-  #  temp_each_atom_type_count.update(temp1)
-  #  for j in atom_type_sym2num.keys():
-  #    temp1={j:config1_nnl.nnl_type_sym[i].count(j)}
-  #    temp_each_atom_type_count.update(temp1)
-  #  print(temp_each_atom_type_count)
-  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
-  for i in config1.id:
-    print(config1_env.environment_sym[i])
 
 
 
