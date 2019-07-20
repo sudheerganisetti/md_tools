@@ -2,7 +2,7 @@
 """
 @Author : Sudheer Ganisetti
 @Date   : Mo 25. Dez 18:34:13 CET 2017
-Do 20. Jun 20:34:10 CEST 2019
+@         Do 20. Jun 20:34:10 CEST 2019
 This code is to compute nnl, nnlchk,  connectivity(Qn) and A-O-A triplets for the sample (SiO2 + Al2O3 + P2O5 + Na2O + CaO + MgO)
 """
 
@@ -10,51 +10,8 @@ import numpy as np
 import sys
 import math as mt
 import itertools as it
-#import sudheer
-print(sys.path)
-# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-def write_imd_header1(output,box,atype1,r1,atype2,r2):
-  #output
-  output.write("#F A 1 1 3 1 0\n")
-  output.write("#C number type x y z tot_nn \n")
-  output.write("#X %lf 0.0 0.0 \n" %(box[0]))
-  output.write("#Y 0.0 %lf 0.0 \n" %(box[1]))
-  output.write("#Z 0.0 0.0 %lf \n" %(box[2]))
-  output.write("## rcut (%s-O) = %lf and rcut (%s-O) = %lf \n" %(str(atype1),r1,str(atype2),r2))
-  output.write("#E \n")
-
-# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-def write_imd_header2(output,box,atype1,r1,atype2,r2):
-  #output
-  output.write("#F A 1 1 3 3 0\n")
-  output.write("#C number type x y z tot_nn n_in_QnAlm m_in_QnAlm\n")
-  output.write("#X %lf 0.0 0.0 \n" %(box[0]))
-  output.write("#Y 0.0 %lf 0.0 \n" %(box[1]))
-  output.write("#Z 0.0 0.0 %lf \n" %(box[2]))
-  output.write("## rcut (%s-O) = %lf and rcut (%s-O) = %lf \n" %(str(atype1),r1,str(atype2),r2))
-  output.write("#E \n")
-
-# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-def write_imd_header3(output,box,atype1,r1):
-  #output
-  output.write("#F A 1 1 3 1 0\n")
-  output.write("#C number type x y z tot_nn \n")
-  output.write("#X %lf 0.0 0.0 \n" %(box[0]))
-  output.write("#Y 0.0 %lf 0.0 \n" %(box[1]))
-  output.write("#Z 0.0 0.0 %lf \n" %(box[2]))
-  output.write("## rcut of %s-O = %lf, %s-O = %lf, %s-O = %lf, %s-O = %lf \n" %(str(atype1[2]),r1[2][1],str(atype1[3]),r1[3][1],str(atype1[4]),r1[4][1],str(atype1[5]),r1[5][1]))
-  output.write("#E \n")
-
-# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-def write_imd_header4(output,box,atype1,r1):
-  #output
-  output.write("#F A 1 1 3 1 1 0\n")
-  output.write("#C number type x y z tot_nn status\n")
-  output.write("#X %lf 0.0 0.0 \n" %(box[0]))
-  output.write("#Y 0.0 %lf 0.0 \n" %(box[1]))
-  output.write("#Z 0.0 0.0 %lf \n" %(box[2]))
-  output.write("## rcut of %s-O = %lf, %s-O = %lf, %s-O = %lf, %s-O = %lf \n" %(str(atype1[2]),r1[2][1],str(atype1[3]),r1[3][1],str(atype1[4]),r1[4][1],str(atype1[5]),r1[5][1]))
-  output.write("#E \n")
+import datetime
+import ganisetti_tools
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 if __name__=="__main__":
@@ -62,7 +19,8 @@ if __name__=="__main__":
   error2=0
   debug = "yes"
   tot_argv=len(sys.argv)
-
+  CREDBG    = '\33[41m'
+  CREDBGEND = '\x1b[0m'
   while error1 == 0:
     # checking for minimum arguments
     if tot_argv < 8:
@@ -164,7 +122,8 @@ if __name__=="__main__":
       error1=1
       error1_statement="Error info: Oxygen atom type is not given"
       break
-
+    # initilize a cutoff radii array
+    rc=[[0.0 for i in range(max(given_all_atom_types)+1)] for j in range(max(given_all_atom_types)+1)]
     # search for bond lengths
     if "-SiO" in commandline:
       if "Si" not in atom_type_sym2num:
@@ -172,9 +131,11 @@ if __name__=="__main__":
         error1_statement="Error info: Si atom type is not given but SiO bond length is given"
         break
       tmp_index=commandline.index("-SiO")
-      bond_length['SiO']				= float(commandline[tmp_index+1])
-      bond_length_sym2num['Si']				= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Si']]	= float(commandline[tmp_index+1])
+      bond_length['SiO']					= float(commandline[tmp_index+1])
+      bond_length_sym2num['Si']					= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Si']]		= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Si']][atom_type_sym2num['O']]	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Si']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-AlO" in commandline:
@@ -183,9 +144,11 @@ if __name__=="__main__":
         error1_statement="Error info: Al atom type is not given but AlO bond length is given"
         break
       tmp_index=commandline.index("-AlO")
-      bond_length['AlO']                                = float(commandline[tmp_index+1])
-      bond_length_sym2num['Al']				= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Al']]      = float(commandline[tmp_index+1])
+      bond_length['AlO']                                	= float(commandline[tmp_index+1])
+      bond_length_sym2num['Al']					= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Al']]      	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Al']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Al']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-PO" in commandline:
@@ -194,9 +157,11 @@ if __name__=="__main__":
         error1_statement="Error info: P atom type is not given but PO bond length is given"
         break
       tmp_index=commandline.index("-PO")
-      bond_length['PO']					= float(commandline[tmp_index+1])
-      bond_length_sym2num['P']				= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['P']]	= float(commandline[tmp_index+1])
+      bond_length['PO']						= float(commandline[tmp_index+1])
+      bond_length_sym2num['P']					= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['P']]		= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['P']][atom_type_sym2num['O']]       	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['P']]       	= float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-CaO" in commandline:
@@ -205,9 +170,11 @@ if __name__=="__main__":
         error1_statement="Error info: Ca atom type is not given but CaO bond length is given"
         break
       tmp_index=commandline.index("-CaO")
-      bond_length['CaO']                                = float(commandline[tmp_index+1])
-      bond_length_sym2num['Ca']				= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Ca']]      = float(commandline[tmp_index+1])
+      bond_length['CaO']                                	= float(commandline[tmp_index+1])
+      bond_length_sym2num['Ca']					= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Ca']]      	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Ca']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Ca']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-MgO" in commandline:
@@ -216,9 +183,11 @@ if __name__=="__main__":
         error1_statement="Error info: Mg atom type is not given but MgO bond length is given"
         break
       tmp_index=commandline.index("-MgO")
-      bond_length['MgO']                                = float(commandline[tmp_index+1])
-      bond_length_sym2num['Mg']                        	= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Mg']]      = float(commandline[tmp_index+1])
+      bond_length['MgO']                                	= float(commandline[tmp_index+1])
+      bond_length_sym2num['Mg']                        		= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Mg']]      	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Mg']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Mg']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-NaO" in commandline:
@@ -227,9 +196,11 @@ if __name__=="__main__":
         error1_statement="Error info: Na atom type is not given but NaO bond length is given"
         break
       tmp_index=commandline.index("-NaO")
-      bond_length['NaO']                                = float(commandline[tmp_index+1])
-      bond_length_sym2num['Na']                        	= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Na']]      = float(commandline[tmp_index+1])
+      bond_length['NaO']                                	= float(commandline[tmp_index+1])
+      bond_length_sym2num['Na']                        		= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Na']]      	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Na']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Na']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     if "-SrO" in commandline:
@@ -238,9 +209,11 @@ if __name__=="__main__":
         error1_statement="Error info: Sr atom type is not given but SrO bond length is given"
         break
       tmp_index=commandline.index("-SrO")
-      bond_length['SrO']                                = float(commandline[tmp_index+1])
-      bond_length_sym2num['Sr']                        	= float(commandline[tmp_index+1])
-      bond_length_num2num[atom_type_sym2num['Sr']]      = float(commandline[tmp_index+1])
+      bond_length['SrO']                                	= float(commandline[tmp_index+1])
+      bond_length_sym2num['Sr']                        		= float(commandline[tmp_index+1])
+      bond_length_num2num[atom_type_sym2num['Sr']]      	= float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['Sr']][atom_type_sym2num['O']]       = float(commandline[tmp_index+1])
+      rc[atom_type_sym2num['O']][atom_type_sym2num['Sr']]       = float(commandline[tmp_index+1])
       recognized_argvs_idex.append(tmp_index)
       recognized_argvs_idex.append(tmp_index+1)
     
@@ -269,356 +242,176 @@ if __name__=="__main__":
       for i in bond_length_sym2num:
         print(i,bond_length[i+str("O")],bond_length_sym2num[i])
     
-
   if error1 != 0:
-     #sudheer.banner()
+     ganisetti_tools.banner()
      print("************* S. Ganisetti *************")
      print("Error: usage is wrong")
      print("./this_program  ChkptFile -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 -SiO 2.0 -AlO 2.0 -CaO 3.0 -MgO 3.0")
      print("The program is prepared for chemical compositions: SiO2, Al2O3, P2O5, Na2O, CaO and MgO")
      print("Please specify both atom types and the cutoff radii of all required pair of atoms")
-     print("%s" %(str(error1_statement)))
+     print("%s %s %s" %(CREDBG,str(error1_statement),CREDBGEND))
      print("****************************************")
      sys.exit(0)
 
-  sys.exit(0)
-  #if error1 == 0:
-  # --------------------------------------------------------------------
-  # The cutoff radii are hard coaded, please edit according to your need
-  MAX_NEIGHBOURS=15
-  rc_SiO=2.00
-  rc_AlO=2.25
-  rc_CaO=3.00
-  rc_MgO=2.60
-  MAX_ATOM_TYPES=5
-  Enable_O_env_status_loop="yes"
-  Enable_phase1_calculations="no"
-  Enable_phase2_calculations="yes"
-  atype=["","O","Si","Al","Ca","Mg"]
-  rc=[[0.0 for i in xrange(MAX_ATOM_TYPES+1)] for j in xrange(MAX_ATOM_TYPES+1)]
-  rc[2][1] = rc[1][2] = rc_SiO
-  rc[3][1] = rc[1][3] = rc_AlO
-  rc[4][1] = rc[1][4] = rc_CaO
-  rc[5][1] = rc[1][5] = rc_MgO
-  rcut=0.0
-  for i in range(MAX_ATOM_TYPES+1):
-    for j in range(MAX_ATOM_TYPES+1):
-       rcut=max(rcut,rc[i][j])
-  # for debugging
-  temp87=0
-  if Enable_phase1_calculations == "yes" and Enable_O_env_status_loop == "no":
-    print "\n\n*****************************************************************************************************************"
-    print "*                                                                                                               *"
-    print "*  Please note that computing the type of Oxygen based on its environment is time consuming and is not enabled  *"
-    print "*                                                                                                               *"
-    print "*****************************************************************************************************************\n\n"
-  if Enable_phase1_calculations == "yes" and Enable_O_env_status_loop == "yes":
-    print "\n\n*****************************************************************************************************************"
-    print "*                                                                                                               *"
-    print "* Beware that you have enabled 'Enable_O_env_status_loop'                                                       *"
-    print "* computing the type of Oxygen based on its environment is time consuming and requires a lot of memory          *"
-    print "* if the memory exceeds the system memory resulting the computer to hang                                        *"
-    print "* if you want to avoid your system to hang please watch the memory with 'htop' command in another terminal and  *"
-    print "* terminate the program if the memory is exceeding 90% of the systems memory                                    *"
-    print "*                                                                                                               *"
-    print "*****************************************************************************************************************\n\n"
-
-  print "\n\n*****************************************************************************************************************"
-  print "*                                                                                                               *"
-  print "* Enable_phase1_calculations = %s										*" %(str(Enable_phase1_calculations))
-  print "* Enable_phase2_calculations = %s										*" %(str(Enable_phase2_calculations))
-  print "*                                                                                                               *"
-  print "*****************************************************************************************************************\n\n"
-  
-
-
-  # --------------------------------------------------------------------
-
+  MAX_NEIGHBOURS=8
+  MAX_ATOM_TYPES=8
   BASE_FILE=str(sys.argv[1])
   LAMMPS_DUMP_FILE=BASE_FILE+str('.dump')
-  foutput1=BASE_FILE+str('.nnl')
-  output1=open(foutput1,'w')
-  output1.write("# nnl file: used cutoffs are r_SiO = %lf ; r_AlO = %lf ; r_CaO = %lf ; r_MgO = %lf\n" %(rc[1][2],rc[1][3],rc[1][4],rc[1][5]))  
 
-  atoms_data1=np.loadtxt(LAMMPS_DUMP_FILE,dtype='int,int,float,float,float,float,float,float,float',skiprows=9)
-  atoms_data2=open(LAMMPS_DUMP_FILE,'r')
-  TotalAtoms=len(atoms_data1)
-  TotalProperties=len(atoms_data1[0])
+  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)  
+  config1_nnl	= ganisetti_tools.compute_nnl(config1,rc,atom_type_num2sym)
 
-  # Find the max id of the atom number
-  atoms_data3=[]
-  for line in atoms_data1:
-    for i in line:
-      atoms_data3.append(i)
-  atoms_data3=np.reshape(atoms_data3,(TotalAtoms,TotalProperties))
+  total_atoms_of_type_sym={}
+  tmp=config1.type.values()
+  tmp=list(tmp)
+  for i in atom_type_sym2num.keys():
+    total_atoms_of_type_sym[i]=tmp.count(atom_type_sym2num[i])
 
-  # define parameters to store atom properties
-  MAX_ATOM_NUMBER=int(max(atoms_data3.T[0]))
-  atom_status=[0 for i in xrange(TotalAtoms)]
-  atom_local_id=[-1 for i in xrange(MAX_ATOM_NUMBER+1)]		# atom_local_id[global_id]=local_id
-  atom_global_id=[-1 for i in xrange(TotalAtoms)]		# atom_global_id[local_id]=global_id
-  atom_type=[-1 for i in xrange(TotalAtoms)]
-  atom_charge=[0.0 for i in xrange(TotalAtoms)]
-  atom_posx=[-1.0 for i in xrange(TotalAtoms)]
-  atom_posy=[-1.0 for i in xrange(TotalAtoms)]
-  atom_posz=[-1.0 for i in xrange(TotalAtoms)]
-  
-  # define parameters to store nnl related information
-  nnl=[[-1 for j in xrange(MAX_NEIGHBOURS)] for i in xrange(TotalAtoms)]
-  nnl_count=[0 for i in xrange(TotalAtoms)]
-  #storing atom types of each neighbour in the nnl_types for getting things easy to work with
-  nnl_type=[[-1 for j in xrange(MAX_NEIGHBOURS)] for i in xrange(TotalAtoms)]
-  #store each pair distance to use them in later
-  nnl_each_pair_distance=[[-1 for j in xrange(MAX_NEIGHBOURS)] for i in xrange(TotalAtoms)]
+  output_nnl=open(BASE_FILE+str('.nnl'),'w')
+  output_nnl.write("# nnl file; used cutoffs are: ")
+  for i in given_all_atom_types:
+    if atom_type_sym2num['O'] != i:
+      output_nnl.write("%s-O = %.2lf ; " %(atom_type_num2sym[i],rc[i][atom_type_sym2num['O']]))
+  output_nnl.write("\n")
 
-
-  # Reading box dimensions
-  count=1
-  for line in atoms_data2:
-    data=line.strip().split()
-    if count < 10:
-      if count == 4:
-        if TotalAtoms != int(data[0]):
-          print "WARNING: The total number of atoms mentioned in the file is not equal to the total number of atoms in the file\n"
-      elif count == 6:
-        box_xx_lo=float(data[0])
-        box_xx_hi=float(data[1])
-        box_xx=box_xx_hi-box_xx_lo
-      elif count == 7:
-        box_yy_lo=float(data[0])
-        box_yy_hi=float(data[1])
-        box_yy=box_yy_hi-box_yy_lo
-      elif count == 8:
-        box_zz_lo=float(data[0])
-        box_zz_hi=float(data[1])
-        box_zz=box_zz_hi-box_zz_lo
-    count=count+1
-  imd_box=np.array([box_xx,box_yy,box_zz])
-
-  # Reading atoms position
-  count=0
-  for i in range(TotalAtoms):
-    atom_local_id[atoms_data1[i][0]]=i				# atom_local_id[global_id]=local_id
-    atom_global_id[i]=atoms_data1[i][0]				# atom_global_id[local_id]=global_id
-    atom_type[i]=atoms_data1[i][1]
-    atom_charge[i]=atoms_data1[i][2]
-    # atom positions are not shifted if the box is not shifted
-    #atom_posx[i]=atoms_data1[i][3]
-    #atom_posy[i]=atoms_data1[i][4]
-    #atom_posz[i]=atoms_data1[i][5]
-    # atom positions are also shifted if the box is shifted
-    atom_posx[i]=atoms_data1[i][3] - box_xx_lo
-    atom_posy[i]=atoms_data1[i][4] - box_yy_lo
-    atom_posz[i]=atoms_data1[i][5] - box_zz_lo
-
-  # Devide the box into voxels
-  MaxCells_X=int(box_xx/rcut)
-  MaxCells_Y=int(box_yy/rcut)
-  MaxCells_Z=int(box_zz/rcut)
-
-  # LEC= Length of Each Cell
-  LEC_X=float(box_xx/MaxCells_X)
-  LEC_Y=float(box_yy/MaxCells_Y)
-  LEC_Z=float(box_zz/MaxCells_Z)
-  
-  cell_atoms_count=[[[0 for i in xrange(MaxCells_Z)] for j in xrange(MaxCells_Y)] for k in xrange(MaxCells_X)]				# cell_atoms_count[X][Y][Z]
-  cell_atoms_list=[[[[0 for i in xrange(200)] for j in xrange(MaxCells_Z)] for k in xrange(MaxCells_Y)] for l in xrange(MaxCells_X)]	# cell_atoms_list[X][Y][Z][200]
-
-  #assign the atoms into respective cell number
-  for i in range(TotalAtoms):
-    # If the atoms are outside of the box then bring them into other side according to PBC
-    if atom_posx[i] >= box_xx:
-      atom_posx[i]=atom_posx[i]-box_xx
-    if atom_posy[i] >= box_yy:
-      atom_posy[i]=atom_posy[i]-box_yy
-    if atom_posz[i] >= box_zz:
-      atom_posz[i]=atom_posz[i]-box_zz
-    
-    cellX=int(atom_posx[i]/LEC_X)
-    cellY=int(atom_posy[i]/LEC_Y)
-    cellZ=int(atom_posz[i]/LEC_Z)
-    cell_atoms_list[cellX][cellY][cellZ][cell_atoms_count[cellX][cellY][cellZ]]=i
-    cell_atoms_count[cellX][cellY][cellZ]=cell_atoms_count[cellX][cellY][cellZ]+1
-
-  total_atoms_of_type=[0 for i in xrange(MAX_ATOM_TYPES+1)]
-  for i in xrange(TotalAtoms):
-    if atom_type[i] == 1:
-      total_atoms_of_type[1] = total_atoms_of_type[1] + 1
-    elif atom_type[i] == 2:
-      total_atoms_of_type[2] = total_atoms_of_type[2] + 1
-    elif atom_type[i] == 3:
-      total_atoms_of_type[3] = total_atoms_of_type[3] + 1
-    elif atom_type[i] == 4:
-      total_atoms_of_type[4] = total_atoms_of_type[4] + 1
-    elif atom_type[i] == 5:
-      total_atoms_of_type[5] = total_atoms_of_type[5] + 1
-
-  # Main loop to compute nnl and other information
-  # (i,j,k) => selecting atom which is belongs to one cell
-  for i in range(MaxCells_X):
-    for j in range(MaxCells_Y):
-      for k in range(MaxCells_Z):
-        for atom1 in range(cell_atoms_count[i][j][k]):
-          atom1_id=cell_atoms_list[i][j][k][atom1]
-          pos_x1=atom_posx[atom1_id]
-          pos_y1=atom_posy[atom1_id]
-          pos_z1=atom_posz[atom1_id]
-
-          # (l,m,n) => selecting neighbour cell 
-          for l in np.arange(0,2,1):
-            new_i=i+l
-            an=new_i
-            pbc_x=0.0
-            # -----------------------------------------------------
-            # Dealing with periodic boundary condition along x-axis
-            if new_i < 0:
-              # But the conditions will not lead to excute this case
-              new_i=MaxCells_X-1
-              print "WARNING!!! There is somethong wrong, please check it well !!!\n"
-            if new_i > MaxCells_X-1:
-              new_i=0
-              pbc_x=box_xx
-            # -----------------------------------------------------
-            for m in np.arange(-1*l,2,1):
-              new_j=j+m
-              bn=new_j
-              pbc_y=0.0
-              # -----------------------------------------------------
-              # Dealing with periodic boundary condition along y-axis
-              if new_j < 0:
-                new_j=MaxCells_Y-1
-                pbc_y=-1.0*box_yy
-              if new_j > MaxCells_Y-1:
-                new_j=0
-                pbc_y=box_yy
-              # -----------------------------------------------------
-              n1=-1
-              if l==m:
-                n1=-1*l
-              for n in np.arange(n1,2,1):
-                new_k=k+n
-                cn=new_k
-                pbc_z=0.0
-                # -----------------------------------------------------
-                # Dealing with periodic boundary conditions along z-axis
-                if new_k < 0:
-                  new_k=MaxCells_Z-1
-                  pbc_z=-1.0*box_zz
-                if new_k > MaxCells_Z-1:
-                  new_k = 0
-                  pbc_z=box_zz
-                # debugging
-                #if i==0 and j==0 and k==0:
-                #  print ("%d %d %d %d %d %d   atom1_id %d") %(l,m,n,an,bn,cn,atom1_id)
-
-                # -----------------------------------------------------
-                # This is a trick to avoid double counting the interactions if the two atoms are in the same cell
-                temp=0
-                if i == new_i and j == new_j and k == new_k:
-                  temp=atom1+1
-                # selecting the neighbour atom
-                for atom2 in range(temp,cell_atoms_count[new_i][new_j][new_k]):
-                  atom2_id=cell_atoms_list[new_i][new_j][new_k][atom2]
-                  pos_x2=atom_posx[atom2_id] + pbc_x
-                  pos_y2=atom_posy[atom2_id] + pbc_y
-                  pos_z2=atom_posz[atom2_id] + pbc_z
-
-                  r=np.linalg.norm(np.array([pos_x1,pos_y1,pos_z1])-np.array([pos_x2,pos_y2,pos_z2]))
-                  if r <= rc[atom_type[atom1_id]][atom_type[atom2_id]]:
-                    nnl[atom1_id][nnl_count[atom1_id]]=atom2_id
-                    nnl[atom2_id][nnl_count[atom2_id]]=atom1_id
-                    nnl_each_pair_distance[atom1_id][nnl_count[atom1_id]]=r
-                    nnl_each_pair_distance[atom2_id][nnl_count[atom2_id]]=r
-                    nnl_count[atom1_id]=nnl_count[atom1_id]+1
-                    nnl_count[atom2_id]=nnl_count[atom2_id]+1
-                    # debugging 
-                    #if atom1_id==713:
-                    #  print "-------------"
-                    #  print "%d %d %d %d %d %d %d %d\n" %(atom1_id,i,j,k,atom2_id,new_i,new_j,new_k)
-                    #  print "-------------"
-                    #if i==0 and j==0 and k==0:
-                    #   print ("%d %d %d %d %d %d") %(i,j,k,new_i,new_j,new_k)
-                    #temp80=nnl[atom1_id]
-                    #temp81=nnl[atom2_id]
-                    #temp82=[]
-                    #for temp83 in temp80:
-                    #  if temp83 != -1:
-                    #    temp82.append(temp83)
-                    #temp84=[]
-                    #for temp85 in temp81:
-                    #  if temp85 != -1:
-                    #    temp84.append(temp85)
-                    #if (len(temp82) != len(set(temp82))) and temp87 ==-1 :
-                    #  print "%d %d %d %d %d %d %d %d\n" %(atom1_id,i,j,k,atom2_id,new_i,new_j,new_k)
-                    #  print "max cells %d %d %d" %(MaxCells_X,MaxCells_Y,MaxCells_Z)
-                    #  print "atoms in 1st cell "
-                    #  for temp86 in range(cell_atoms_count[i][j][k]):
-                    #      print "%d  " %(cell_atoms_list[i][j][k][temp86])
-                    #  print "nnl of %d" %(atom1_id)
-                    #  for temp86 in nnl[atom1_id]:
-                    #    if temp86 != -1:
-                    #      print "%d " %(temp86)
-                    #  print "atoms in 2nd cell "
-                    #  for temp86 in range(cell_atoms_count[new_i][new_j][new_k]):
-                    #      print "%d  " %(cell_atoms_list[new_i][new_j][new_k][temp86])
-                    #  print "nnl of %d" %(atom2_id)
-                    #  for temp86 in nnl[atom2_id]:
-                    #    if temp86 != -1:
-                    #      print "%d " %(temp86)
-                    #  temp87=temp87+1
   # **************************************************************************************
-  # removing -1 from nnl[i]
-  atom_nnl_type=[[-1 for j in xrange(MAX_NEIGHBOURS)] for i in xrange(TotalAtoms)]
-  for i in range(TotalAtoms):
-    temp1=[]
-    temp2=[]
-    temp3=[]
-    for j in range(len(nnl[i])):
-      if nnl[i][j] !=-1:
-        temp1.append(nnl[i][j])
-        temp2.append(atom_type[nnl[i][j]])
-        temp3.append(nnl_each_pair_distance[i][j])
-    nnl[i]=temp1
-    nnl_type[i]=temp2
-    nnl_each_pair_distance[i]=temp3
-    for j in xrange(nnl_count[i]):
-      atom_nnl_type[i][j]=atom_type[nnl[i][j]]
-  # **************************************************************************************
-  # writing out all nnl list
-  for i in range(0,TotalAtoms):
-    output1.write("%d " %(atom_global_id[i]))
-    for j in range(MAX_NEIGHBOURS):
-      if j < nnl_count[i]:
-        output1.write("%d  " %(atom_global_id[nnl[i][j]]))
-      else:
-        output1.write("-1  ")
-    output1.write("\n")
-  output1.close()
+  # writing nnl
+  for i in config1.id:
+    output_nnl.write("%d\t" %(i))
+    for j in config1_nnl.nnl[i]:
+      output_nnl.write("%d\t" %(j))
+    output_nnl.write("\n")
 
   # **************************************************************************************
   # writing out chkpt with nnl status
-  output=open(BASE_FILE+str("_withnnlstatus.atoms"),'w')
-  write_imd_header3(output,imd_box,atype,rc)
-  for i in range(TotalAtoms):
-    output.write("%d  %d  %lf  %lf  %lf %d \n" %(atom_global_id[i],atom_type[i],atom_posx[i],atom_posy[i],atom_posz[i],nnl_count[i]))
-  output.close()
+  output_nnl_imd=open(BASE_FILE+str("_withnnlstatus.atoms"),'w')
+  ganisetti_tools.write_imd_header(output_nnl_imd,config1.box,rc,atom_type_sym2num,atom_type_num2sym)
+  for i in config1.id:
+    #output_nnl_imd.write("%d  %d  %lf  %lf  %lf %d \n" %(i,config1.type[i],config1.posx[i],config1.posy[i],config1.posz[i],config1_nnl.nnl_count[i]))
+    ganisetti_tools.write_imd_atom(output_nnl_imd,i,config1,config1_nnl)
+  output_nnl_imd.close()
 
   # **************************************************************************************
   # writing out individual cations and their anions
-  for i in range(2,MAX_ATOM_TYPES+1):
-    output=open(BASE_FILE+str("_")+str(atype[i])+str("-O.atoms"),'w')
-    write_imd_header1(output,imd_box,str(atype[i]),rc[i][1],str(atype[i]),rc[i][1])
-    SelectAtoms1=[0 for ii in xrange(TotalAtoms)]
-    for j in range(TotalAtoms):
-      if i == atom_type[j]:
-        SelectAtoms1[j]=1
-        for k in range(nnl_count[j]):
-          SelectAtoms1[nnl[j][k]]=1
-    for j in range(TotalAtoms):
-      if SelectAtoms1[j] == 1:
-        output.write("%d  %d  %lf  %lf  %lf %d \n" %(atom_global_id[j],atom_type[j],atom_posx[j],atom_posy[j],atom_posz[j],nnl_count[j]))
-    output.close()
+  for i in atom_type_sym2num.keys():
+    if i != "O":
+      output=open(BASE_FILE+str("_")+str(i)+str("-O.atoms"),'w')
+      ganisetti_tools.write_imd_header(output,config1.box,rc,atom_type_sym2num,atom_type_num2sym)
+      SelectAtoms1={}
+      for j in config1.id:
+        SelectAtoms1[j]=0
+      for j in config1.id:
+        if i == atom_type_num2sym[config1.type[j]]:
+          tmp={j:1}
+          SelectAtoms1.update(tmp)
+          for k in config1_nnl.nnl[j]:
+            tmp={k:1}
+            SelectAtoms1.update(tmp)
+      for j in config1.id:
+        if SelectAtoms1[j] == 1:
+          ganisetti_tools.write_imd_atom(output,j,config1,config1_nnl)
+      output.close()
 
+  # **************************************************************************************
+  # writing out briding and non-bridging oxygen
+  output_BO_NBO_info_v01=open(BASE_FILE+str("_BO_NBO_info_v01.data"),'w')
+  atomTypeSym_2_locallyAssignedNumber={}
+  locallyAssignedNumber_2_atomTypeSym={}
+  # We want to use an array where each column is a chemical element
+  # We could also use atom_type but this will become a very big array
+  # for example, I have elements Si(type=1), Al(2), Ca(10), Sr(20)
+  # then i have to create an array of size 20^MAX_NEIGHBORS, which is not needed
+  # so to avoid big array, we are reassiging the atom types locally
+  # i.e, Si(type=0),Al(1),Ca(2) and Sr(3)
+  # the order can be anything we always save what type is saved in what number 
+  count1=0
+  for i in atom_type_sym2num.keys():
+    if i != "O":
+      atomTypeSym_2_locallyAssignedNumber[i]=count1
+      locallyAssignedNumber_2_atomTypeSym[count1]=i
+      count1=count1+1
+  '''
+  # the following is created for only given number of atoms, however, this is increasing the complexcity 
+  # to maintain the O_env array so a fixed number of MAX_NEIGHBOURS and MAX_ATOM_TYPES are used to build O_env
+  '''
+  b=[]
+  for i in range(pow(MAX_ATOM_TYPES,MAX_NEIGHBOURS)):
+    b.append(0)
+  # O_env=np.reshape(np.array(b),((len(atom_type_sym2num.keys())-1),MAX_NEIGHBOURS))
+  # O_env=[[0 for i in range(MAX_NEIGHBOURS)] for j in range(MAX_ATOM_TYPES)]
+  b=np.array(b)
+  O_env=np.reshape(b,(MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS,MAX_NEIGHBOURS))
+  # O_env= Oxygen Environment
+  # O_env[numper_of_type0_neighbours][numper_of_type1_neighbours]..=total_such_O_atoms_in_the_sample
+  # t1=[0 for ii in range((len(atom_type_sym2num.keys())-1))]
+
+  # print(np.shape(O_env))
+  # print(sys.getsizeof(O_env))
+  for i in config1.id:
+    if atom_type_num2sym[config1.type[i]] == "O":
+      t1=[0 for ii in range(MAX_ATOM_TYPES)]
+      for j in range(MAX_ATOM_TYPES):
+        if j < count1:
+          t1[j]=config1_nnl.nnl_type_sym[i].count(locallyAssignedNumber_2_atomTypeSym[j])
+          # j = 0,1,2,3 the real meaning of j is in locallyAssignedNumber_2_atomTypeSym[j] i.e may be 0=Si, 1=Al etc.
+      O_env[t1[0]][t1[1]][t1[2]][t1[3]][t1[4]][t1[5]][t1[6]][t1[7]] = O_env[t1[0]][t1[1]][t1[2]][t1[3]][t1[4]][t1[5]][t1[6]][t1[7]] + 1
+  output_BO_NBO_info_v01.write("# ")
+  for i in atom_type_sym2num.keys():
+    if i != "O":
+      output_BO_NBO_info_v01.write("%s " %(i))
+  for i in range(MAX_ATOM_TYPES-len(atom_type_sym2num.keys())+1):
+      output_BO_NBO_info_v01.write("dummy ")
+  output_BO_NBO_info_v01.write("\tNumber_of_O_of_this_type \t O (total_O_atoms = %d )\n" %(total_atoms_of_type_sym['O']))
+
+  for i0 in range(MAX_NEIGHBOURS):
+    for i1 in range(MAX_NEIGHBOURS):
+      for i2 in range(MAX_NEIGHBOURS):
+        for i3 in range(MAX_NEIGHBOURS):
+          for i4 in range(MAX_NEIGHBOURS):
+            for i5 in range(MAX_NEIGHBOURS):
+              for i6 in range(MAX_NEIGHBOURS):
+                for i7 in range(MAX_NEIGHBOURS):
+                  if O_env[i0][i1][i2][i3][i4][i5][i6][i7] != 0:
+                     temp_O1=O_env[i0][i1][i2][i3][i4][i5][i6][i7]
+                     temp_O2=temp_O1/total_atoms_of_type_sym['O']*100.0
+                     output_BO_NBO_info_v01.write("  %d  %d  %d  %d  %d  %d  %d  %d \t%d\t%.2lf\n" %(i0,i1,i2,i3,i4,i5,i6,i7,temp_O1,temp_O2))
+
+  output_BO_NBO_info_v01.close()
+
+  '''
+  a=np.array([Si,Al])
+  my_var=["" for i in range(5)]
+  count1=0
+  for i in a:
+    for j in xrange(5):
+      my_var[count1]=str("Si")+str(j)
+      count1=count1+1
+        
+    print(my_var)
+ 
+  a=str("")
+  b=str("")
+  count1=1
+  for i in range(len(atom_type_num2sym)):
+    a=a+str("[")
+  a=a+str("0")
+  for i in range(len(atom_type_num2sym)):
+    a=a+str(" for i") + str(count1) + str(" in range(5)]")
+    count1=count1+1
+  for i in range(len(atom_type_num2sym)):
+    a=a+str("]")
+  exec(b=a)
+  print(b)
+
+  #for i in config1.id:
+  #  if atom_type_num2sym[config1.type[i]] == "O": 
+  '''
+
+
+
+
+
+  sys.exit(0)
   if Enable_phase1_calculations == "yes":
     # **************************************************************************************
     # writing out bridging and non-bridging oxygen
@@ -1841,19 +1634,19 @@ if __name__=="__main__":
           for j in xrange(ca3):
             if a1[j] > cb[j]-1:
               cb[j]=a1[j]+1
-      print "\n\n*****************************************************************************************************************"
-      print "* The max elements of matrix for computing type of Oxygen based on its environment is                           *"
-      print "* count_O_env_status_of_R",
+      print("\n\n*****************************************************************************************************************")
+      print("* The max elements of matrix for computing type of Oxygen based on its environment is                           *")
+      print("* count_O_env_status_of_R")
       for i in xrange(ca3):
-        print "[%d]" %(cb[i]),
-      print "                                              *"
-      print "*****************************************************************************************************************\n\n"
+        print("[%d]" %(cb[i]))
+      print("                                              *")
+      print("*****************************************************************************************************************\n\n")
       for i in cb:
         if i >= 10:
-          print "\n\n*****************************************************************************************************************\n\n"
-          print " The dimension of a big matrix to compute the type of Oxygen based on its environment is too big and thus the system \n"
-          print " can hang if there is not enough ram therefore please enable this loop if you are sure that you have enough memory   \n\n"
-          print "*****************************************************************************************************************\n\n"
+          print("\n\n*****************************************************************************************************************\n\n")
+          print(" The dimension of a big matrix to compute the type of Oxygen based on its environment is too big and thus the system \n")
+          print(" can hang if there is not enough ram therefore please enable this loop if you are sure that you have enough memory   \n\n")
+          print("*****************************************************************************************************************\n\n")
           Enable_O_env_status_loop == "no"
   
     if Enable_O_env_status_loop == "yes":
