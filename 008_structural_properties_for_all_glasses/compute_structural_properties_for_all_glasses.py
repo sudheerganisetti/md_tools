@@ -70,6 +70,8 @@ if __name__=="__main__":
     for i in sys.argv:
       commandline.append(i)
     commandline=list(commandline)
+    atom_type={}
+    bond_length={} 
     #given_all_atoms=[]
     given_all_atom_types=[]
     given_O_type  =-1
@@ -84,41 +86,49 @@ if __name__=="__main__":
     if "-O" in commandline:
       O_index=commandline.index("-O")
       given_O_type=int(commandline[O_index+1])
+      atom_type['O']=given_O_type
       #given_all_atoms.append("-O")
       given_all_atom_types.append(given_O_type)
     if "-Si" in commandline:
       Si_index=commandline.index("-Si")
       given_Si_type=int(commandline[Si_index+1])
+      atom_type['Si']=given_Si_type
       #given_all_atoms.append("-Si")
       given_all_atom_types.append(given_Si_type)
     if "-Al" in commandline:
       Al_index=commandline.index("-Al")
       given_Al_type=int(commandline[Al_index+1])
+      atom_type['Al']=given_Al_type
       #given_all_atoms.append("-Al")
       given_all_atom_types.append(given_Al_type)
     if "-P" in commandline:
       P_index=commandline.index("-P")
       given_P_type=int(commandline[P_index+1])
+      atom_type['P']=given_P_type
       #given_all_atoms.append("-P")
       given_all_atom_types.append(given_P_type)
     if "-Ca" in commandline:
       Ca_index=commandline.index("-Ca")
       given_Ca_type=int(commandline[Ca_index+1])
+      atom_type['Ca']=given_Ca_type
       #given_all_atoms.append("-Ca")
       given_all_atom_types.append(given_Ca_type)
     if "-Mg" in commandline:
       Mg_index=commandline.index("-Mg")
       given_Mg_type=int(commandline[Mg_index+1])
+      atom_type['Mg']=given_Mg_type
       #given_all_atoms.append("-Mg")
       given_all_atom_types.append(given_Mg_type)
     if "-Sr" in commandline:
       Sr_index=commandline.index("-Sr")
       given_Sr_type=int(commandline[Sr_index+1])
+      atom_type['Sr']=given_Sr_type
       #given_all_atoms.append("-Sr")
       given_all_atom_types.append(given_Sr_type)
     if "-Na" in commandline:
       Na_index=commandline.index("-Na")
       given_Na_type=int(commandline[Na_index+1])
+      atom_type['Na']=given_Na_type
       #given_all_atoms.append("-Na")
       given_all_atom_types.append(given_Na_type)
 
@@ -146,32 +156,42 @@ if __name__=="__main__":
     if "-SiO" in commandline:
       tmp_index=commandline.index("-SiO")
       bond_lengths[given_Si_type]=float(commandline[tmp_index+1])
+      bond_length['SiO']=float(commandline[tmp_index+1])
     if "-AlO" in commandline:
       tmp_index=commandline.index("-AlO")
       bond_lengths[given_Al_type]=float(commandline[tmp_index+1])
+      bond_length['AlO']=float(commandline[tmp_index+1])
     if "-PO" in commandline:
       tmp_index=commandline.index("-PO")
       bond_lengths[given_P_type]=float(commandline[tmp_index+1])
+      bond_length['PO']=float(commandline[tmp_index+1])
     if "-CaO" in commandline:
       tmp_index=commandline.index("-CaO")
       bond_lengths[given_Ca_type]=float(commandline[tmp_index+1])
+      bond_length['CaO']=float(commandline[tmp_index+1])
     if "-MgO" in commandline:
       tmp_index=commandline.index("-MgO")
       bond_lengths[given_Mg_type]=float(commandline[tmp_index+1])
+      bond_length['MgO']=float(commandline[tmp_index+1])
     if "-NaO" in commandline:
       tmp_index=commandline.index("-NaO")
       bond_lengths[given_Na_type]=float(commandline[tmp_index+1])
+      bond_length['NaO']=float(commandline[tmp_index+1])
     if "-SrO" in commandline:
       tmp_index=commandline.index("-SrO")
       bond_lengths[given_Sr_type]=float(commandline[tmp_index+1])
+      bond_length['SrO']=float(commandline[tmp_index+1])
 
     # checking bond lengths of all atom types are  given or not
-    for i in given_all_atom_types:
-      if i != given_O_type:
-        if bond_lengths[i] == -1.0:
-          print("Error: " + str(given_all_atoms[i]) + " atom type is defined but" + str(given_all_atoms[i]) + "-O bond length is not passed into command line")
+    #for i in given_all_atom_types:
+    #  if i != given_O_type:
+    #    if bond_lengths[i] == -1.0:
+    #for i in atom_type.keys():
+    #   print("%s" %(i))
+    #      print("Error: " + str(given_all_atoms[i]) + " atom type is defined but" + str(given_all_atoms[i]) + "-O bond length is not passed into command line")
 
-
+    print(atom_type)
+    print(bond_length)
 
 
   if error1 != 0:
