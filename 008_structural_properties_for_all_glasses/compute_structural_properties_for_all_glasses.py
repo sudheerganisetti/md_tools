@@ -253,13 +253,15 @@ if __name__=="__main__":
      print("****************************************")
      sys.exit(0)
 
-  MAX_NEIGHBOURS=8
-  MAX_ATOM_TYPES=8
   BASE_FILE=str(sys.argv[1])
   LAMMPS_DUMP_FILE=BASE_FILE+str('.dump')
 
   config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)  
   config1_nnl	= ganisetti_tools.compute_nnl(config1,rc,atom_type_num2sym)
+
+  MAX_NEIGHBOURS=8
+  MAX_ATOM_TYPES=8
+  MAX_ATOM_TYPE=max(config1.type.values())
 
   total_atoms_of_type_sym={}
   tmp=config1.type.values()
@@ -311,7 +313,7 @@ if __name__=="__main__":
         if SelectAtoms1[j] == 1:
           ganisetti_tools.write_imd_atom(output,j,config1,config1_nnl)
       output.close()
-
+  '''
   # **************************************************************************************
   # writing out briding and non-bridging oxygen
   output_BO_NBO_info_v01=open(BASE_FILE+str("_BO_NBO_info_v01.data"),'w')
@@ -330,10 +332,8 @@ if __name__=="__main__":
       atomTypeSym_2_locallyAssignedNumber[i]=count1
       locallyAssignedNumber_2_atomTypeSym[count1]=i
       count1=count1+1
-  '''
   # the following is created for only given number of atoms, however, this is increasing the complexcity 
   # to maintain the O_env array so a fixed number of MAX_NEIGHBOURS and MAX_ATOM_TYPES are used to build O_env
-  '''
   b=[]
   for i in range(pow(MAX_ATOM_TYPES,MAX_NEIGHBOURS)):
     b.append(0)
@@ -377,35 +377,57 @@ if __name__=="__main__":
                      output_BO_NBO_info_v01.write("  %d  %d  %d  %d  %d  %d  %d  %d \t%d\t%.2lf\n" %(i0,i1,i2,i3,i4,i5,i6,i7,temp_O1,temp_O2))
 
   output_BO_NBO_info_v01.close()
-
   '''
-  a=np.array([Si,Al])
-  my_var=["" for i in range(5)]
-  count1=0
-  for i in a:
-    for j in xrange(5):
-      my_var[count1]=str("Si")+str(j)
-      count1=count1+1
-        
-    print(my_var)
+  # **************************************************************************************
+  # coordination of each atom
+  Coord=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPE+1)]               # Coord[atom_type][coordination]
+
+  for i in config1.id:
+    Coord[config1.type[i]][config1_nnl.nnl_count[i]]=Coord[config1.type[i]][config1_nnl.nnl_count[i]]+1
+
+  output_coord1=open(BASE_FILE+str("_average_coord"),'w')
+  output_coord1.write("# Chemical_Element\tNumber_of_Atoms\tAverageCoordination\n")
  
-  a=str("")
-  b=str("")
-  count1=1
-  for i in range(len(atom_type_num2sym)):
-    a=a+str("[")
-  a=a+str("0")
-  for i in range(len(atom_type_num2sym)):
-    a=a+str(" for i") + str(count1) + str(" in range(5)]")
-    count1=count1+1
-  for i in range(len(atom_type_num2sym)):
-    a=a+str("]")
-  exec(b=a)
-  print(b)
+  MAX_LENGTH_OF_COORD=0
+  for i in atom_type_num2sym.keys():
+    avg_coord1=0
+    avg_coord2=0
+    output_coord=open(BASE_FILE+str("_")+str(atom_type_num2sym[i])+str("_coord"),'w')
+    for j in range(0,MAX_NEIGHBOURS+1):
+      output_coord.write("%d %d \n" %(j,Coord[i][j]))
+      MAX_LENGTH_OF_COORD=max(MAX_LENGTH_OF_COORD,Coord[i][j])
+      avg_coord1=avg_coord1+(j*Coord[i][j])
+      avg_coord2=avg_coord2+Coord[i][j]
+    output_coord.close()
+    if avg_coord2 != 0.0:
+      output_coord1.write("%s  %d  %lf \n" %(atom_type_num2sym[i],total_atoms_of_type_sym[atom_type_num2sym[i]],1.0*avg_coord1/avg_coord2))
+  output_coord1.close()
 
-  #for i in config1.id:
-  #  if atom_type_num2sym[config1.type[i]] == "O": 
+  ''' 
+    Coordination=[[[0 for k in range(MAX_LENGTH_OF_COORD)] for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPES+1)]  # Coordination[atom_type][coordination
+][count] = atom_id
+    Coordination_count=[[0 for j in range(MAX_NEIGHBOURS+1)] for i in range(MAX_ATOM_TYPES+1)]                                  # Coordination_count[atom_type][coordi
+nation]
+    for i in range(TotalAtoms):
+      Coordination[atom_type[i]][nnl_count[i]][Coordination_count[atom_type[i]][nnl_count[i]]]=i
+      Coordination_count[atom_type[i]][nnl_count[i]]=Coordination_count[atom_type[i]][nnl_count[i]]+1
+
+    for i in range(1,MAX_ATOM_TYPES+1):
+      for j in range(MAX_NEIGHBOURS+1):
+        if Coord[i][j] !=0:
+          output=open(BASE_FILE+str("_")+str(atype[i])+str("_")+str(j)+str("_coord.atomsid"),'w')
+          for k in range(Coordination_count[i][j]):
+            l=Coordination[i][j][k]
+            output.write("%d  " %(atom_global_id[l]))
+            for m in nnl[l]:
+              if m != -1:
+                output.write("%d  " %(atom_global_id[m]))
+            output.write("\n")
+          output.close
   '''
+
+
+
 
 
 
