@@ -8,8 +8,10 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 """
 import numpy as np
+import sys
 
-class banner:
+#class banner:
+def sudheer_banner():
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * Sudheer banner
@@ -17,20 +19,19 @@ class banner:
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
-  def __init__(self):
-    print("\n\n")
-    print("    #***********************************************************************************# ")
-    print("    #                                                                                   # ")
-    print("    #     \\\\|//       //////  /     /  /////    /     /  ///////  ///////  /////        #")
-    print("    #    (  °  )      /       /     /  /    /   /     /  /        /        /    /       # ")
-    print("    #   ( ^   ^ )     /       /     /  /     /  /     /  /        /        /     /      # ")
-    print("    #  {  °   °  }    //////  /     /  /     /  ///////  //////   //////   //////       # ")
-    print("    #   (  \^/  )          /  /     /  /     /  /     /  /        /        /    /       # ")
-    print("    #    (  Ö  )           /  /     /  /    /   /     /  /        /        /     /      # ")
-    print("    #     (_Ä_)       //////  ///////  /////    /     /  ///////  ///////  /     /      # ")
-    print("    #                                                                                   # ")
-    print("    #***********************************************************************************# ")
-    print("\n\n")
+  print("\n\n")
+  print("    #***********************************************************************************# ")
+  print("    #                                                                                   # ")
+  print("    #     \\\\|//       //////  /     /  /////    /     /  ///////  ///////  /////        #")
+  print("    #    (  °  )      /       /     /  /    /   /     /  /        /        /    /       # ")
+  print("    #   ( ^   ^ )     /       /     /  /     /  /     /  /        /        /     /      # ")
+  print("    #  {  °   °  }    //////  /     /  /     /  ///////  //////   //////   //////       # ")
+  print("    #   (  \^/  )          /  /     /  /     /  /     /  /        /        /    /       # ")
+  print("    #    (  Ö  )           /  /     /  /    /   /     /  /        /        /     /      # ")
+  print("    #     (_Ä_)       //////  ///////  /////    /     /  ///////  ///////  /     /      # ")
+  print("    #                                                                                   # ")
+  print("    #***********************************************************************************# ")
+  print("\n\n")
 
 
 class get_atoms_info_from_imd:
@@ -762,294 +763,136 @@ class read_command_line:
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * Reading command line and arguments
   * This class helps to read the command line arguments
-  * and store the data into relavent parameters
+  * and stores the data into relavent parameters
   * usage: cmd=ganisetti_tools.read_command_line(sys.argv)
   *
-  * output: cmd.atom_type            = stores given atom types                           # atom_type['Si'] = 1
-  *         cmd.atom_type_sym2num    = stores given atom types based on chemical symbol  # atom_type_sym2num['Si'] = 1
+  * output: cmd.atom_type_sym2num    = stores given atom types based on chemical symbol  # atom_type_sym2num['Si'] = 1
   *         cmd.atom_type_num2sym    = stores given atom types based on atom type		 # atom_type_sym2num['1'] = Si
-  *         cmd.bond_length          = stores given bond lengths	                     # bond_length['Si'] = 2.2
   *         cmd.bond_length_sys2num  = stores given bond lengths based on chemical symbol# bond_length_sym2num['Si']=2.2
   *         cmd.bond_length_num2num  = stores given bond lengths based on atom type	     # bond_length_num2num['1'] =2.2
   *         cmd.rc                   = stores the given cutoff radii#rc[atom_type_sym2num['Si']][atom_type_sym2num['O']]
-  *         cmd.given_all_atom_types = stores the given atom types # given_all_atom_types = 1,2,3,4, etc.
+  *         cmd.error                = if "none" is returned then the command line is successfully passed
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,sys_argv):
-    error1 = 0
-    error2 = 0
-    debug = "yes"
+    error1_statement = "none"
+    self.error = "none"
     tot_argv = len(sys_argv)
-    CREDBG = '\33[41m'
+    CREDBG = '\33[31m' # \33[41m for red background
     CREDBGEND = '\x1b[0m'
-    while error1 == 0:
+    known_cations = ['Si','Al','P','Na','Ca','Mg'] # The cations list should be updated if you want to add a new cation
+    known_anions  = ['O','F']                      # The anions list should be updated if you want to add a new anion
+    known_all_atom_types = known_cations + known_anions
+
+    # while is using to handle the error rather iterating the loop
+    while error1_statement == "none":
       # checking for minimum arguments
       if tot_argv < 8:
-        error1 = 1
         error1_statement = "Error info: a minimum of 7 arguments should be passed to the program"
         break
       if (tot_argv % 2) != 0:
-        error1 = 1
         error1_statement = "Error info: odd number of arguments are expecting to be passed to the program"
         break
       commandline = []
-      recognized_argvs_idex = []
+      recognized_argvs_index = []
       for i in sys_argv:
         commandline.append(i)
-      commandline = list(commandline)
-      atom_type           = {}  # store all given atom types				            # atom_type['Si'] = 1
-      bond_length         = {}  # store all given bond lengths				            # bond_length['Si'] = 2.2
-      atom_type_sym2num   = {}  # store all given atom types based on chemical symbol 	# atom_type_sym2num['Si'] = 1
-      atom_type_num2sym   = {}  # store all given atom types based on atom type		    # atom_type_sym2num['1'] = Si
-      bond_length_sym2num = {}  # store all given bond lengths based on chemical symbol	# bond_length_sym2num['Si']=2.2
-      bond_length_num2num = {}  # store all given bond lengths based on atom type	    # bond_length_num2num['1'] = 2.2
+      commandline         = list(commandline)
 
-      given_all_atom_types = []
-      # search for atom types
-      if "-O" in commandline:
-        O_index                           = commandline.index("-O")
-        given_O_type                      = int(commandline[O_index + 1])
-        atom_type['O']                    = given_O_type
-        atom_type_sym2num['O']            = given_O_type
-        atom_type_num2sym[given_O_type]   = 'O'
-        given_all_atom_types.append(given_O_type)
-        recognized_argvs_idex.append(O_index)
-        recognized_argvs_idex.append(O_index + 1)
-      if "-Si" in commandline:
-        Si_index                          = commandline.index("-Si")
-        given_Si_type                     = int(commandline[Si_index + 1])
-        atom_type['Si']                   = given_Si_type
-        atom_type_sym2num['Si']           = given_Si_type
-        atom_type_num2sym[given_Si_type]  = 'Si'
-        given_all_atom_types.append(given_Si_type)
-        recognized_argvs_idex.append(Si_index)
-        recognized_argvs_idex.append(Si_index + 1)
-      if "-Al" in commandline:
-        Al_index                          = commandline.index("-Al")
-        given_Al_type                     = int(commandline[Al_index + 1])
-        atom_type['Al']                   = given_Al_type
-        atom_type_sym2num['Al']           = given_Al_type
-        atom_type_num2sym[given_Al_type]  = 'Al'
-        given_all_atom_types.append(given_Al_type)
-        recognized_argvs_idex.append(Al_index)
-        recognized_argvs_idex.append(Al_index + 1)
-      if "-P" in commandline:
-        P_index                           = commandline.index("-P")
-        given_P_type                      = int(commandline[P_index + 1])
-        atom_type['P']                    = given_P_type
-        atom_type_sym2num['P']            = given_P_type
-        atom_type_num2sym[given_P_type]   = 'P'
-        given_all_atom_types.append(given_P_type)
-        recognized_argvs_idex.append(P_index)
-        recognized_argvs_idex.append(P_index + 1)
-      if "-Ca" in commandline:
-        Ca_index                          = commandline.index("-Ca")
-        given_Ca_type                     = int(commandline[Ca_index + 1])
-        atom_type['Ca']                   = given_Ca_type
-        atom_type_sym2num['Ca']           = given_Ca_type
-        atom_type_num2sym[given_Ca_type]  = 'Ca'
-        given_all_atom_types.append(given_Ca_type)
-        recognized_argvs_idex.append(Ca_index)
-        recognized_argvs_idex.append(Ca_index + 1)
-      if "-Mg" in commandline:
-        Mg_index                          = commandline.index("-Mg")
-        given_Mg_type                     = int(commandline[Mg_index + 1])
-        atom_type['Mg']                   = given_Mg_type
-        atom_type_sym2num['Mg']           = given_Mg_type
-        atom_type_num2sym[given_Mg_type]  = 'Mg'
-        given_all_atom_types.append(given_Mg_type)
-        recognized_argvs_idex.append(Mg_index)
-        recognized_argvs_idex.append(Mg_index + 1)
-      if "-Sr" in commandline:
-        Sr_index                          = commandline.index("-Sr")
-        given_Sr_type                     = int(commandline[Sr_index + 1])
-        atom_type['Sr']                   = given_Sr_type
-        atom_type_sym2num['Sr']           = given_Sr_type
-        atom_type_num2sym[given_Sr_type]  = 'Sr'
-        given_all_atom_types.append(given_Sr_type)
-        recognized_argvs_idex.append(Sr_index)
-        recognized_argvs_idex.append(Sr_index + 1)
-      if "-Na" in commandline:
-        Na_index                          = commandline.index("-Na")
-        given_Na_type                     = int(commandline[Na_index + 1])
-        atom_type['Na']                   = given_Na_type
-        atom_type_sym2num['Na']           = given_Na_type
-        atom_type_num2sym[given_Na_type]  = 'Na'
-        given_all_atom_types.append(given_Na_type)
-        recognized_argvs_idex.append(Na_index)
-        recognized_argvs_idex.append(Na_index + 1)
-      if "-F" in commandline:
-        F_index                           = commandline.index("-F")
-        given_F_type                      = int(commandline[F_index + 1])
-        atom_type['F']                    = given_F_type
-        atom_type_sym2num['F']            = given_F_type
-        atom_type_num2sym[given_Na_type]  = 'F'
-        given_all_atom_types.append(given_F_type)
-        recognized_argvs_idex.append(F_index)
-        recognized_argvs_idex.append(F_index + 1)
+      # define the parameters
+      # atom_type           = {} # store all given atom types				             # atom_type['Si'] = 1
+      # bond_length         = {} # store all given bond lengths				             # bond_length['Si'] = 2.2
+      atom_type_sym2num     = {} # store all given atom types based on chemical symbol 	 # atom_type_sym2num['Si'] = 1
+      atom_type_num2sym     = {} # store all given atom types based on atom type		 # atom_type_sym2num['1'] = Si
+      bond_length_sym2num   = {} # store all given bond lengths based on chemical symbol # bond_length_sym2num['Si']=2.2
+      bond_length_num2num   = {} # store all given bond lengths based on atom type	     # bond_length_num2num['1']=2.2
+      given_anions_sym2num  = {} # store all given anions
+      given_cations_sym2num = {} # store all given cations
+      given_all_atom_types = [] # store the given atom types as a list                  # given_all_atom_type =1,2, etc.
 
-      # O atom type must be given
-      if "O" not in atom_type_sym2num.keys():
-        error1 = 1
-        error1_statement = "Error info: Oxygen atom type is not given"
+      # search for atom type
+      for known_atom_type in known_all_atom_types:
+        known_atom_type_string = str("-")+known_atom_type
+        if known_atom_type_string in commandline:
+          given_atom_type_sym                     =  known_atom_type
+          known_atom_type_index                   = int(commandline.index(known_atom_type_string))
+          given_atom_type_num                     = int(commandline[known_atom_type_index + 1])
+          atom_type_sym2num[given_atom_type_sym]  = given_atom_type_num
+          atom_type_num2sym[given_atom_type_num]  = given_atom_type_sym
+          recognized_argvs_index.append(known_atom_type_index)
+          recognized_argvs_index.append(known_atom_type_index+1)
+          if given_atom_type_sym in known_cations:
+            given_cations_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
+          if given_atom_type_sym in known_anions:
+            given_anions_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
+
+      # at least one anion should be given
+      if len(given_anions_sym2num.keys()) < 1 or len(given_cations_sym2num.keys()) < 1:
+        error1_statement="Error info: at least one anion and one cation should be given"
         break
-      # initilize a cutoff radii array
-      rc = [[0.0 for i in range(max(given_all_atom_types) + 1)] for j in range(max(given_all_atom_types) + 1)]
-      # search for bond lengths
-      if "-SiO" in commandline:
-        if "Si" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Si atom type is not given but SiO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-SiO")
-        bond_length['SiO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Si']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Si']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Si']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Si']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-AlO" in commandline:
-        if "Al" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Al atom type is not given but AlO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-AlO")
-        bond_length['AlO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Al']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Al']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Al']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Al']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-PO" in commandline:
-        if "P" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: P atom type is not given but PO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-PO")
-        bond_length['PO']                                   = float(commandline[tmp_index + 1])
-        bond_length_sym2num['P']                            = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['P']]         = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['P']][atom_type_sym2num['O']]  = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['P']]  = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-CaO" in commandline:
-        if "Ca" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Ca atom type is not given but CaO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-CaO")
-        bond_length['CaO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Ca']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Ca']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Ca']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Ca']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-MgO" in commandline:
-        if "Mg" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Mg atom type is not given but MgO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-MgO")
-        bond_length['MgO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Mg']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Mg']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Mg']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Mg']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-NaO" in commandline:
-        if "Na" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Na atom type is not given but NaO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-NaO")
-        bond_length['NaO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Na']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Na']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Na']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Na']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
-      if "-SrO" in commandline:
-        if "Sr" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Sr atom type is not given but SrO bond length is given"
-          break
-        tmp_index                                           = commandline.index("-SrO")
-        bond_length['SrO']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Sr']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Sr']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Sr']][atom_type_sym2num['O']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['O']][atom_type_sym2num['Sr']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
 
-      if "-CaF" in commandline:
-        if "Ca" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: Ca atom type is not given but CaF bond length is given"
-          break
-        if "F" not in atom_type_sym2num:
-          error1 = 1
-          error1_statement = "Error info: F atom type is not given but CaF bond length is given"
-          break
-        tmp_index                                           = commandline.index("-CaF")
-        bond_length['CaF']                                  = float(commandline[tmp_index + 1])
-        bond_length_sym2num['Ca']                           = float(commandline[tmp_index + 1])
-        bond_length_num2num[atom_type_sym2num['Ca']]        = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['Ca']][atom_type_sym2num['F']] = float(commandline[tmp_index + 1])
-        rc[atom_type_sym2num['F']][atom_type_sym2num['Ca']] = float(commandline[tmp_index + 1])
-        recognized_argvs_idex.append(tmp_index)
-        recognized_argvs_idex.append(tmp_index + 1)
+      # initilize a 2d array for cutoff radii
+      rc = [[0.0 for i in range(max(atom_type_num2sym.keys()) + 1)] for j in range(max(atom_type_num2sym.keys()) + 1)]
 
-      # checking for bond lengths of all given atom types
-      for i in atom_type_sym2num:
-        if i != "O":
-          if i not in bond_length_sym2num:
-            error1 = 1
-            error1_statement = "Error info: " + str(i) + " atom type is given but " + str(
-              i) + "O bond length is not given"
+      # search for atom pairs
+      known_atom_pairs=[(x,y) for x in known_cations for y in known_anions]
+      for known_atom_pair in known_atom_pairs:
+        kap1=known_atom_pair[0]
+        kap2=known_atom_pair[1]
+        known_atom_pair_string=str("-")+kap1+kap2
+        if known_atom_pair_string in commandline:
+          known_atom_pair_index = int(commandline.index(known_atom_pair_string))
+          bond_length_sym2num[(kap1,kap2)] = float(commandline[known_atom_pair_index + 1])
+          bond_length_num2num[(atom_type_sym2num[kap1],atom_type_sym2num[kap2])]=float(commandline[known_atom_pair_index+1])
+          rc[atom_type_sym2num[kap1]][atom_type_sym2num[kap2]] = float(commandline[known_atom_pair_index + 1])
+          rc[atom_type_sym2num[kap2]][atom_type_sym2num[kap1]] = float(commandline[known_atom_pair_index + 1])
+          recognized_argvs_index.append(known_atom_pair_index)
+          recognized_argvs_index.append(known_atom_pair_index+1)
+          # checking if bond lenth of an atom is given but one of the atom types is not given
+          if not kap1 in atom_type_sym2num.keys():
+            error1_statement="Error info: "+str(kap1)+" atom type is not given but "+str(known_atom_pair)+" bond length is given"
             break
-      # checking for any unrecognized arguments passed into command line
+          if not kap2 in atom_type_sym2num.keys():
+            error1_statement="Error info: "+str(kap2)+" atom type is not given but "+str(known_atom_pair)+" bond length is given"
+            break
+
+      # checking if one of the atom types is given but bond length is not given
+      for i in given_cations_sym2num.keys():
+        for j in given_anions_sym2num.keys():
+          if str("-")+i+j not in commandline:
+            error1_statement=str(i)+" and "+str(j)+" atoms are given but "+str(i)+str(j)+" bondlength is not given"
+            break
+
+      # checking for any unrecognized arguments passed into the command line
       for i in range(2, len(commandline)):
-        if i not in recognized_argvs_idex:
-          error1 = 1
-          error1_statement = "Error info: " + str(
-            commandline[i]) + " is an unrecognozed argument passed into the command line"
+        if i not in recognized_argvs_index:
+          error1_statement="Error info: an unrecognized argument "+str(commandline[i])+" is passed into the command line"
           break
+      break  # breaking the main while loop
 
-      break  # terminate the main while loop
-
-    if debug == "no":
-      for i in atom_type_sym2num:
-        print(i, atom_type[i], atom_type_sym2num[i])
-        if i != "O":
-          print(bond_length_sym2num[i], bond_length_num2num[atom_type_sym2num[i]])
-      print("\n\n")
-      for i in bond_length_sym2num:
-        print(i, bond_length[i + str("O")], bond_length_sym2num[i])
-
-    if error1 != 0:
-      ganisetti_tools.banner()
+    if error1_statement != "none":
+      sudheer_banner()
       print("************************************** S. Ganisetti **************************************")
       print("Error: usage is wrong")
-      print("./this_program  ChkptFile -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 -SiO 2.0 -AlO 2.0 -CaO 3.0 -MgO 3.0")
-      print("The program is prepared for chemical compositions: SiO2, Al2O3, P2O5, Na2O, CaO and MgO")
-      print("Please specify both atom types and the cutoff radii of all required pair of atoms")
+      print("correct usage is: ./this_program  ChkptFile -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 -SiO 2.0 -AlO 2.0 -CaO 3.0 -MgO 3.0")
+      #print("The program is prepared for chemical compositions: SiO2, Al2O3, P2O5, Na2O, CaO and MgO")
+      print("This program is prepared for ",end=" ")
+      for i in range(len(known_all_atom_types)-2):
+        print(known_all_atom_types[i],end=", ")
+      print("%s and %s atom types" %(known_all_atom_types[i+1],known_all_atom_types[i+2]))
+      print("Please specify all atom types and the cutoff radii of all required atom pairs\n")
+      print("additional error information: ")
       print("%s %s %s" % (CREDBG, str(error1_statement), CREDBGEND))
       print("******************************************************************************************")
-      sys.exit(0)
+      self.error = "error"
 
-    self.atom_type            = atom_type
-    self.atom_type_sym2num    = atom_type_sym2num
-    self.atom_type_num2sym    = atom_type_num2sym
-    self.bond_length          = bond_length
-    self.bond_length_sys2num  = bond_length_sym2num
-    self.bond_length_num2num  = bond_length_num2num
-    self.rc                   = rc
-    self.given_all_atom_types = given_all_atom_types
+    if error1_statement == "none":
+      self.atom_type_sym2num    = atom_type_sym2num
+      self.atom_type_num2sym    = atom_type_num2sym
+      self.bond_length_sys2num  = bond_length_sym2num
+      self.bond_length_num2num  = bond_length_num2num
+      self.rc                   = rc
+    # self.atom_type            = atom_type
+    # self.bond_length          = bond_length
+    # self.given_all_atom_types = given_all_atom_types
