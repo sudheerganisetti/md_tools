@@ -1,5 +1,19 @@
 # Author: Sudheer Ganisetti
 
+
+      #***********************************************************************************# 
+      #                                                                                   # 
+      #     \\\\|//       //////  /     /  /////    /     /  ///////  ///////  /////        # 
+      #    (  °  )      /       /     /  /    /   /     /  /        /        /    /       # 
+      #   ( ^   ^ )     /       /     /  /     /  /     /  /        /        /     /      # 
+      #  {  °   °  }    //////  /     /  /     /  ///////  //////   //////   //////       # 
+      #   (  \^/  )          /  /     /  /     /  /     /  /        /        /    /       # 
+      #    (  Ö  )           /  /     /  /    /   /     /  /        /        /     /      # 
+      #     (_Ä_)       //////  ///////  /////    /     /  ///////  ///////  /     /      # 
+      #                                                                                   # 
+      #***********************************************************************************# 
+
+
 The following tools are very useful for analysing various properties of amorphous materials (glasses) with given atomic positions and chemical atom types.
 The main intension of these programs is to post-process the output files of the atomistic simulations (LAMMPS and IMD programs).
 
