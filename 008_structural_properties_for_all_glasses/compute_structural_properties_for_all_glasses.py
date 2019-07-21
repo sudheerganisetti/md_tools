@@ -25,6 +25,8 @@ if __name__=="__main__":
   rc                   = cmd.rc
   given_anions_sym2num = cmd.given_anions_sym2num
   given_cations_sym2num= cmd.given_cations_sym2num
+  given_formers_sym2num= cmd.given_formers_sym2num
+  given_modifiers_sym2num = cmd.given_modifiers_sym2num
 
   # main loop starts here
   BASE_FILE=str(sys.argv[1])
@@ -92,16 +94,30 @@ if __name__=="__main__":
           ganisetti_tools.write_imd_atom(output,j,config1,config1_nnl)
       output.close()
 
-  # **************************************************************************************
-  # compute environment of each atom
-  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
 
   # **************************************************************************************
-  # compute coordination of each atom
+  # compute coordination of each atom and average atom type
   config1_coord=ganisetti_tools.compute_coordination(config1,config1_nnl,atom_type_num2sym)
+  for i in atom_type_sym2num.keys():
+    output1=open(BASE_FILE+str("_")+str(i)+str("_coord"),'w')
+    output1.write("# %s : coord  number_of_atoms  %% of atoms\n" %(str(i)))
+    for j in range(config1_nnl.max_nnl_each_atom_type_sym[i]+1):
+      temp1=config1_coord.individual_coord_sym[(i,j)]
+      output1.write("%d\t%d\t\t%.2lf\n" %(j,temp1,float(temp1*100.0/total_atoms_of_type_sym[i])))
+    output1.close()
   output1=open(BASE_FILE+str("_average_coord"),'w')
   output1.write("# AtomType_sym  AtomType_num   Number_of_Atoms AverageCoordination\n")
   for i in atom_type_sym2num.keys():
-    output1.write("%s\t%d\t%d\t%.2lf\n" %(i,atom_type_sym2num[i],total_atoms_of_type_sym[i],config1_coord.coord_sym[i]))
+    output1.write("%s\t%d\t%d\t%.2lf\n" %(i,atom_type_sym2num[i],total_atoms_of_type_sym[i],config1_coord.avg_coord_sym[i]))
   output1.close()
+
+  '''
+  # **************************************************************************************
+  # compute environment of each atom
+  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
+  for i in given_anions_sym2num.keys():
+    for j in config1.id:
+      if i == atom_type_num2sym[config1.type[j]]:
+        for k in config1_env.environment_atomnum2sym[j]:
+  '''
 

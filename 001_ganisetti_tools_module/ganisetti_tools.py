@@ -200,6 +200,7 @@ class compute_nnl:
   *         config1.nnl_type_num
   *         config1.nnl_type_sym
   *         config1.nnl_each_pair_distance
+  *         config1.max_nnl_each_atom_type_sym
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -228,11 +229,12 @@ class compute_nnl:
     cell_atoms_list=[[[[0 for i in range(200)] for j in range(MaxCells_Z)] for k in range(MaxCells_Y)] for l in range(MaxCells_X)]
 
     # define parameters to store nnl related information
-    self.nnl			= {}
-    self.nnl_count		= {}
-    self.nnl_type_num		= {}
-    self.nnl_type_sym           = {}
-    self.nnl_each_pair_distance = {}
+    self.nnl			            = {}
+    self.nnl_count		            = {}
+    self.nnl_type_num		        = {}
+    self.nnl_type_sym               = {}
+    self.nnl_each_pair_distance     = {}
+    self.max_nnl_each_atom_type_sym = {}
     MAX_ATOM_NUMBER=max(config.id)
     nnl=[[-1 for j in range(MAX_NEIGHBOURS)] for i in range(MAX_ATOM_NUMBER+1)]
     nnl_count=[0 for i in range(MAX_ATOM_NUMBER+1)]
@@ -240,6 +242,10 @@ class compute_nnl:
     #nnl_type=[[-1 for j in range(MAX_NEIGHBOURS)] for i in range(MAX_ATOM_NUMBER+1)]
     #store each pair distance to use them in later
     nnl_each_pair_distance=[[-1 for j in range(MAX_NEIGHBOURS)] for i in range(MAX_ATOM_NUMBER+1)]
+    max1={}
+    for i in atom_type_num2sym.keys():
+      temp1={i:0}
+      max1.update(temp1)
 
     # store atom positions locally
     atom_posx=config.posx
@@ -358,13 +364,23 @@ class compute_nnl:
             temp2.append(atom_type[nnl[i][j]])
             temp3.append(nnl_each_pair_distance[i][j])
             temp4.append(atom_type_num2sym[atom_type[nnl[i][j]]])
-        self.nnl[i]			= temp1
-        self.nnl_type_num[i]		= temp2
-        self.nnl_type_sym[i]		= temp4
+        temp5={config.type[i]:int(max(max1[config.type[i]],nnl_count[i]))}
+        max1.update(temp5)
+        self.nnl[i]			            = temp1
+        self.nnl_type_num[i]		    = temp2
+        self.nnl_type_sym[i]		    = temp4
         self.nnl_each_pair_distance[i]	= temp3
-        self.nnl_count[i]		= nnl_count[i]
+        self.nnl_count[i]		        = nnl_count[i]
 
-def write_imd_header(output,box,rc,atom_type_sym2num,atom_type_num2sym):
+    # update maximum neighbors of each atom type
+    temp1={}
+    for i in atom_type_num2sym.keys():
+      temp2={atom_type_num2sym[i]:max1[i]}
+      temp1.update(temp2)
+    self.max_nnl_each_atom_type_sym=temp1
+
+
+def write_imd_header(output,box,rc,atom_type_sym2num):
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * Writing the IMD header into given output file
@@ -406,13 +422,13 @@ class compute_each_atom_environment:
   *       config_nnl            = ganisetti_tools.compute_nnl(config,rc,atom_type_num2sym)
   *       atom_type_sym2num     = {"O":"1", "Si":"2", "Al":"3", etc,.}
   *
-  * output: config1.environment_sym
-  *       : config1.environment_num
+  * output: config1.environment_atomnum2sym
+  *       :
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,config,config_nnl,atom_type_sym2num):
-    self.environment_sym={}
+    self.environment_atomnum2sym={}
     for i in config.id:
       temp_each_atom_type_count={}
       #temp1={'id':i}
@@ -420,7 +436,7 @@ class compute_each_atom_environment:
       for j in atom_type_sym2num.keys():
         temp1={j:config_nnl.nnl_type_sym[i].count(j)}
         temp_each_atom_type_count.update(temp1)
-      self.environment_sym[i] = temp_each_atom_type_count
+      self.environment_atomnum2sym[i] = temp_each_atom_type_count
 
 class compute_coordination:
   """
@@ -434,30 +450,40 @@ class compute_coordination:
   *       config_nnl            = ganisetti_tools.compute_nnl(config,rc,atom_type_num2sym)
   *       atom_type_num2sym     = {"1":"O", "2":"Si", "3":"Al", etc,.}
   *
-  * output: config1.coord_sym
-  *       : config1.coord_num
+  * output: config1.avg_coord_sym  # config1.avg_coord_sym['Si'] = 4
+  *         config1.avg_coord_num  # config1.avg_coord_num[atom_type_sym2num['Si']] = 4
+  *         config1.individual_coord_sym # config1.individual_coord_sym[('Si',4)] = 100 atoms
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,config,config_nnl,atom_type_num2sym):
-    self.coord_num={}
-    self.coord_sym={}
-    temp1_count={}
-    temp2_count={}
-    atoms_count={}
-    total_coord={}
+    self.avg_coord_num          = {}
+    self.avg_coord_sym          = {}
+    temp1_count                 = {}
+    temp2_count                 = {}
+    atoms_count                 = {}
+    total_coord                 = {}
+    nnl_individual_coord_count  = {}
     for i in atom_type_num2sym.keys():
       temp1_count={i:0}
       atoms_count.update(temp1_count)
       total_coord.update(temp1_count)
+      for j in range(config_nnl.max_nnl_each_atom_type_sym[atom_type_num2sym[i]]+1):
+        temp2_count={(atom_type_num2sym[i],j):0}
+        nnl_individual_coord_count.update(temp2_count)
+
     for i in config.id:
       temp1_count={config.type[i]:atoms_count[config.type[i]]+1}
       atoms_count.update(temp1_count)
       temp2_count={config.type[i]:total_coord[config.type[i]]+config_nnl.nnl_count[i]}
       total_coord.update(temp2_count)
+      temp3=atom_type_num2sym[config.type[i]]
+      temp4_count={(temp3,config_nnl.nnl_count[i]):nnl_individual_coord_count[(temp3,config_nnl.nnl_count[i])]+1}
+      nnl_individual_coord_count.update(temp4_count)
     for i in atom_type_num2sym.keys():
-      self.coord_num[i]=float(total_coord[i]/atoms_count[i])
-      self.coord_sym[atom_type_num2sym[i]]=float(total_coord[i]/atoms_count[i])
+      self.avg_coord_num[i]=float(total_coord[i]/atoms_count[i])
+      self.avg_coord_sym[atom_type_num2sym[i]]=float(total_coord[i]/atoms_count[i])
+    self.individual_coord_sym=nnl_individual_coord_count
 
 
 class read_command_line_deprecated:
@@ -781,9 +807,11 @@ class read_command_line:
     tot_argv = len(sys_argv)
     CREDBG = '\33[31m' # \33[41m for red background
     CREDBGEND = '\x1b[0m'
-    known_cations = ['Si','Al','P','Na','Ca','Mg'] # The cations list should be updated if you want to add a new cation
+    known_cations = ['Si','Al','P','Na','Ca','Mg','Sr'] # The cations list should be updated if you want to add a new cation
     known_anions  = ['O','F']                      # The anions list should be updated if you want to add a new anion
     known_all_atom_types = known_cations + known_anions
+    known_network_formers=['Si','Al','P']
+    known_modifiers      =['Na','Ca','Mg','Sr']
 
     # while is using to handle the error rather iterating the loop
     while error1_statement == "none":
@@ -809,7 +837,9 @@ class read_command_line:
       bond_length_num2num   = {} # store all given bond lengths based on atom type	     # bond_length_num2num['1']=2.2
       given_anions_sym2num  = {} # store all given anions
       given_cations_sym2num = {} # store all given cations
-      given_all_atom_types = [] # store the given atom types as a list                  # given_all_atom_type =1,2, etc.
+      #given_all_atom_types = [] # store the given atom types as a list                # given_all_atom_type =1,2, etc.
+      given_formers_sym2num = {} # store all given network formers
+      given_modifiers_sym2num = {} # store all given network modifiers
 
       # search for atom type
       for known_atom_type in known_all_atom_types:
@@ -826,6 +856,10 @@ class read_command_line:
             given_cations_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
           if given_atom_type_sym in known_anions:
             given_anions_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
+          if given_atom_type_sym in known_network_formers:
+            given_formers_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
+          if given_atom_type_sym in known_modifiers:
+            given_modifiers_sym2num[given_atom_type_sym]=atom_type_sym2num[given_atom_type_sym]
 
       # at least one anion should be given
       if len(given_anions_sym2num.keys()) < 1 or len(given_cations_sym2num.keys()) < 1:
@@ -893,6 +927,10 @@ class read_command_line:
       self.bond_length_sys2num  = bond_length_sym2num
       self.bond_length_num2num  = bond_length_num2num
       self.rc                   = rc
+      self.given_anions_sym2num = given_anions_sym2num
+      self.given_cations_sym2num= given_cations_sym2num
+      self.given_formers_sym2num= given_formers_sym2num
+      self.given_modifiers_sym2num = given_modifiers_sym2num
     # self.atom_type            = atom_type
     # self.bond_length          = bond_length
     # self.given_all_atom_types = given_all_atom_types
