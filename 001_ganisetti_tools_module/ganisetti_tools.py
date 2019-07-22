@@ -963,14 +963,12 @@ class compute_pair_distribution:
   * Computing pair distribution
   * This class helps to compute the pair distribution
   * and stores the data into relavent parameters
-  * usage: cmd=ganisetti_tools.compute_pair_distribution(config,atom_type_sym2num,rcut,nbins,given_anions)
+  * usage: config1_pdf=ganisetti_tools.compute_pair_distribution(config,cmd,rcut,total_bins)
   *
-  * output: config1.atom_type_sym2num    = stores given atom types based on chemical symbol  # atom_type_sym2num['Si'] = 1
-  *         config1.atom_type_num2sym    = stores given atom types based on atom type		 # atom_type_sym2num['1'] = Si
-  *         config1.bond_length_sys2num  = stores given bond lengths based on chemical symbol# bond_length_sym2num['Si']=2.2
-  *         config1.bond_length_num2num  = stores given bond lengths based on atom type	     # bond_length_num2num['1'] =2.2
-  *         config1.rc                   = stores the given cutoff radii#rc[atom_type_sym2num['Si']][atom_type_sym2num['O']]
-  *         config1.error                = if "none" is returned then the command line is successfully passed
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_pdf.gr[('Si','O',bin_number)]=distribution
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -1112,3 +1110,73 @@ class compute_pair_distribution:
                           temp3 = {(temp_atm2, temp_atm1, temp_bin): gr[(temp_atm2, temp_atm1, temp_bin)] + 1}
                         gr.update(temp3)
     self.gr=gr
+
+class compute_Q:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing Qn speciation
+  *
+  * usage: config1_QSi=ganisetti_tools.compute_Q(cmd,config,config_nnl,config_env,'Si')
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_QSi.Q = list(Q[0],Q[1],Q[2],Q[3] and Q[4])
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,cmd,config,config_nnl,config_env,T):
+    atom_type_sym2num = cmd.atom_type_sym2num
+    atom_type_num2sym = cmd.atom_type_num2sym
+    given_anions_sym2num = cmd.given_anions_sym2num
+    given_cations_sym2num = cmd.given_cations_sym2num
+    given_formers_sym2num = cmd.given_formers_sym2num
+    given_modifiers_sym2num = cmd.given_modifiers_sym2num
+    Q=[0 for i in range(5)]
+
+    #temp1={}
+    #for i in given_anions_sym2num.keys():
+    #  temp2={i:0}
+    #  temp1.update(temp2)
+
+    for i in config.id:
+      if atom_type_num2sym[config.type[i]] == T and config_nnl.nnl_count[i] == 4:
+        BA_count=0
+        NBA_count=0
+        for j in config_nnl.nnl[i]: # j=O1, O2, O3, O4
+          Q_Former4Coord       = 0
+          Q_FormerButNot4Coord = 0
+          Q_NonFormerAnyCoord  = 0
+
+          for k in config_env.env_atomid[j].keys(): # k=[(Si,4),(Al,4),(Ca,5)]
+            if k[0] in given_formers_sym2num.keys():
+              if k[1] == 4:
+                Q_Former4Coord = Q_Former4Coord + config_env.env_atomid[j][k]
+              else :
+                Q_FormerButNot4Coord = Q_FormerButNot4Coord + config_env.env_atomid[j][k] # counts (Si,3),(Al,5)
+                # this is nothing but Si4-O-Al5
+            else:
+              Q_NonFormerAnyCoord = Q_NonFormerAnyCoord + 1
+          if Q_Former4Coord == 2:
+            BA_count = BA_count + 1
+          else:
+            NBA_count = NBA_count + 1
+        Q[BA_count] = Q[BA_count] + 1
+        '''
+          for l in given_formers_sym2num.keys(): # l=Si,Al,P
+            for m in range(config_nnl.max_nnl_each_atom_type_sym[l]+1): # m = 0 to 5
+              if m == 4:
+                # Q main
+                if (l,m) in config_env.env_atomid[j].keys(): # counts only (Si,4) or (Al,4) or (P,4):1
+                  Q_Former4Coord=Q_Former4Coord+config_env.env_atomid[j][(l,m)]
+              else:
+                if 
+                Q_FormerButNot4Coord=Q_FormerButNot4Coord+config_env.env_atomid[j][(l,m)] # counts (Si,3), (Al,5), etc.
+          Q_NonFormerAnyCoord=len(config_env.env_atomid[j].keys())-Q_FormerButNot4Coord-Q_Former4Coord # counts (Ca,5)
+          if Q_Former4Coord == 2:
+            BA_count=BA_count+1
+          else:
+            NBA_count=NBA_count+1
+        Q[BA_count]=Q[BA_count]+1
+        '''
+    self.Q=Q

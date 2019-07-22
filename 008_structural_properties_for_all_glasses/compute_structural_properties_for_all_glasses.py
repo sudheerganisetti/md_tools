@@ -18,6 +18,8 @@ if __name__=="__main__":
 
   # read command line first
   cmd=ganisetti_tools.read_command_line(sys.argv)
+  if cmd.error != "none":
+    sys.exit(0)
   atom_type_sym2num    = cmd.atom_type_sym2num
   atom_type_num2sym    = cmd.atom_type_num2sym
   bond_length_sym2num  = cmd.bond_length_sys2num
@@ -116,8 +118,14 @@ if __name__=="__main__":
   # compute environment of each atom
   config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num,atom_type_num2sym)
 
-  for i in config1.id:
-    if config1.type[i] == 1:
-      if ('Si',4) in config1_env.env_atomid[i]:
-        if config1_env.env_atomid[i][('Si',4)] == 2:
-          print(config1_env.env_atomid[i])
+
+  # **************************************************************************************
+  # compute Q of each network former
+  for i in given_formers_sym2num.keys():
+    output1=open(BASE_FILE+str("_Q")+str(i)+str(".data"),'w')
+    output1.write("# Q(n) speciation of %s\n" %(i))
+    output1.write("# n  number_of_units\n")
+    config1_Q=ganisetti_tools.compute_Q(cmd,config1,config1_nnl,config1_env,i)
+    for j in range(5):
+      output1.write("%d %d\t%.2lf \n" %(j,config1_Q.Q[j],config1_Q.Q[j]*100.0/total_atoms_of_type_sym[i]))
+    output1.close()
