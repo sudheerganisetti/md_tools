@@ -417,26 +417,47 @@ class compute_each_atom_environment:
   * This class helps to compute the environment of each atom
   * and store the data into an object
   *
-  * usage: environment1=ganisetti_tools.compute_each_atom_environment(config,config_nnl,atom_type_sym2num)
+  * usage: environment1=ganisetti_tools.compute_each_atom_environment(config,config_nnl,atom_type_sym2num,atom_type_num2sym)
   * where config                = ganisetti_tools.get_atoms_info_from_lammps(01.dump)
   *       config_nnl            = ganisetti_tools.compute_nnl(config,rc,atom_type_num2sym)
   *       atom_type_sym2num     = {"O":"1", "Si":"2", "Al":"3", etc,.}
+  *       atom_type_num2sym     = {1:"O", 2:"Si", 3:"Al", etc,.}
   *
-  * output: config1.environment_atomnum2sym
-  *       :
+  * output: deprecated => config1.environment_atomnum2sym[0] = {'O':0,'Si':2,'Al':1}
+  *         deprecated => config1.env_atomnum2nnlsymandcoord[0] = (('Si',4),('Al',4))
+  *         deprecated => config1.env_atomnum2countofnnlsymandcoord[0] = (1,1)
+  *         config1.env_atomid[0]={('Si',4):1,('Al',4):1}  # which means Si[4]-O-Al[4]
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
-  def __init__(self,config,config_nnl,atom_type_sym2num):
-    self.environment_atomnum2sym={}
-    for i in config.id:
-      temp_each_atom_type_count={}
+  def __init__(self,config,config_nnl,atom_type_sym2num,atom_type_num2sym):
+    #self.env_atomnum2sym={}
+    #self.env_atomnum2nnlsymandcoord={}
+    #self.env_atomnum2countofnnlsymandcoord={}
+    #self.env_total={}
+    #for i in config.id:
+    #  temp_each_atom_type_count={}
       #temp1={'id':i}
       #temp_each_atom_type_count.update(temp1)
-      for j in atom_type_sym2num.keys():
-        temp1={j:config_nnl.nnl_type_sym[i].count(j)}
-        temp_each_atom_type_count.update(temp1)
-      self.environment_atomnum2sym[i] = temp_each_atom_type_count
+    #  for j in atom_type_sym2num.keys():
+    #    temp1={j:config_nnl.nnl_type_sym[i].count(j)}
+    #    if temp1 != 0:
+    #      temp_each_atom_type_count.update(temp1)
+    #  self.env_atomnum2sym[i] = temp_each_atom_type_count
+    self.env_atomid={}
+    for i in config.id:
+      temp_local_env = {}
+      for j in config_nnl.nnl[i]:
+        temp1 = (atom_type_num2sym[config.type[j]], config_nnl.nnl_count[j])
+        if temp1 in temp_local_env:
+          temp2 = {temp1: temp_local_env[temp1] + 1}
+          temp_local_env.update(temp2)
+        else:
+          temp2 = {temp1: 1}
+          temp_local_env.update(temp2)
+      #self.env_atomnum2nnlsymandcoord[i] = tuple(temp_local_env.keys())
+      #self.env_atomnum2countofnnlsymandcoord[i] = tuple(temp_local_env.values())
+      self.env_atomid[i]=temp_local_env
 
 class compute_coordination:
   """

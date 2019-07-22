@@ -111,13 +111,13 @@ if __name__=="__main__":
     output1.write("%s\t%d\t%d\t%.2lf\n" %(i,atom_type_sym2num[i],total_atoms_of_type_sym[i],config1_coord.avg_coord_sym[i]))
   output1.close()
 
-  '''
+
   # **************************************************************************************
   # compute environment of each atom
-  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num)
-  for i in given_anions_sym2num.keys():
-    for j in config1.id:
-      if i == atom_type_num2sym[config1.type[j]]:
-        for k in config1_env.environment_atomnum2sym[j]:
-  '''
+  config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num,atom_type_num2sym)
 
+  for i in config1.id:
+    if config1.type[i] == 1:
+      if ('Si',4) in config1_env.env_atomid[i]:
+        if config1_env.env_atomid[i][('Si',4)] == 2:
+          print(config1_env.env_atomid[i])
