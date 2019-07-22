@@ -955,3 +955,160 @@ class read_command_line:
     # self.atom_type            = atom_type
     # self.bond_length          = bond_length
     # self.given_all_atom_types = given_all_atom_types
+
+
+class compute_pair_distribution:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing pair distribution
+  * This class helps to compute the pair distribution
+  * and stores the data into relavent parameters
+  * usage: cmd=ganisetti_tools.compute_pair_distribution(config,atom_type_sym2num,rcut,nbins,given_anions)
+  *
+  * output: config1.atom_type_sym2num    = stores given atom types based on chemical symbol  # atom_type_sym2num['Si'] = 1
+  *         config1.atom_type_num2sym    = stores given atom types based on atom type		 # atom_type_sym2num['1'] = Si
+  *         config1.bond_length_sys2num  = stores given bond lengths based on chemical symbol# bond_length_sym2num['Si']=2.2
+  *         config1.bond_length_num2num  = stores given bond lengths based on atom type	     # bond_length_num2num['1'] =2.2
+  *         config1.rc                   = stores the given cutoff radii#rc[atom_type_sym2num['Si']][atom_type_sym2num['O']]
+  *         config1.error                = if "none" is returned then the command line is successfully passed
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,config,cmd,rcut,total_bins):
+
+    atom_type_sym2num=cmd.atom_type_sym2num
+    atom_type_num2sym=cmd.atom_type_num2sym
+    given_anions=cmd.given_anions_sym2num
+    given_cations=cmd.given_cations_sym2num
+    bin_size=float(1.0*rcut/total_bins)
+
+    self.gr={}
+    gr={}
+    temp1=[(i,j,k) for i in given_cations for j in given_anions for k in range(int(total_bins))]
+    for i in temp1:
+      temp2={i:0}
+      gr.update(temp2)
+
+    # Devide the box into voxels
+    MaxCells_X = int(config.box_xx / rcut)
+    MaxCells_Y = int(config.box_yy / rcut)
+    MaxCells_Z = int(config.box_zz / rcut)
+
+    # LEC= Length of Each Cell
+    LEC_X = float(config.box_xx / MaxCells_X)
+    LEC_Y = float(config.box_yy / MaxCells_Y)
+    LEC_Z = float(config.box_zz / MaxCells_Z)
+
+    # cell_atoms_count[X][Y][Z]
+    cell_atoms_count = [[[0 for i in range(MaxCells_Z)] for j in range(MaxCells_Y)] for k in range(MaxCells_X)]
+    # cell_atoms_list[X][Y][Z][200]
+    cell_atoms_list = [[[[0 for i in range(200)] for j in range(MaxCells_Z)] for k in range(MaxCells_Y)] for l in
+                       range(MaxCells_X)]
+
+    # store atom positions locally
+    atom_posx = config.posx
+    atom_posy = config.posy
+    atom_posz = config.posz
+    atom_type = config.type
+
+    # move the box to center and correspondingly atoms if the corner of the box is not at center
+    for i in config.id:
+      atom_posx[i] = config.posx[i] - config.box[0][0]
+      atom_posy[i] = config.posy[i] - config.box[1][0]
+      atom_posz[i] = config.posz[i] - config.box[2][0]
+      # If the atoms are outside of the box then bring them into other side according to PBC
+      if atom_posx[i] >= config.box_xx:
+        atom_posx[i] = atom_posx[i] - config.box_xx
+      if atom_posy[i] >= config.box_yy:
+        atom_posy[i] = atom_posy[i] - config.box_yy
+      if atom_posz[i] >= config.box_zz:
+        atom_posz[i] = atom_posz[i] - config.box_zz
+      # assign the atoms into respective cell number  #assign the atoms into respective cell number
+      cellX = int(atom_posx[i] / LEC_X)
+      cellY = int(atom_posy[i] / LEC_Y)
+      cellZ = int(atom_posz[i] / LEC_Z)
+      cell_atoms_list[cellX][cellY][cellZ][cell_atoms_count[cellX][cellY][cellZ]] = i
+      cell_atoms_count[cellX][cellY][cellZ] = cell_atoms_count[cellX][cellY][cellZ] + 1
+
+    # Main loop to compute pair distribution and other information
+    # (i,j,k) => selecting atom which is belongs to one cell
+    for i in range(MaxCells_X):
+      for j in range(MaxCells_Y):
+        for k in range(MaxCells_Z):
+          for atom1 in range(cell_atoms_count[i][j][k]):
+            atom1_id = cell_atoms_list[i][j][k][atom1]
+            pos_x1 = atom_posx[atom1_id]
+            pos_y1 = atom_posy[atom1_id]
+            pos_z1 = atom_posz[atom1_id]
+
+            # (l,m,n) => selecting neighbour cell
+            for l in np.arange(0, 2, 1):
+              new_i = i + l
+              an = new_i
+              pbc_x = 0.0
+              # -----------------------------------------------------
+              # Dealing with periodic boundary condition along x-axis
+              if new_i < 0:
+                # But the conditions will not lead to excute this case
+                new_i = MaxCells_X - 1
+                print("WARNING!!! There is somethong wrong with the pbc in nnl, please check it well !!!\n")
+              if new_i > MaxCells_X - 1:
+                new_i = 0
+                pbc_x = config.box_xx
+              # -----------------------------------------------------
+              for m in np.arange(-1 * l, 2, 1):
+                new_j = j + m
+                bn = new_j
+                pbc_y = 0.0
+                # -----------------------------------------------------
+                # Dealing with periodic boundary condition along y-axis
+                if new_j < 0:
+                  new_j = MaxCells_Y - 1
+                  pbc_y = -1.0 * config.box_yy
+                if new_j > MaxCells_Y - 1:
+                  new_j = 0
+                  pbc_y = config.box_yy
+                # -----------------------------------------------------
+                n1 = -1
+                if l == m:
+                  n1 = -1 * l
+                for n in np.arange(n1, 2, 1):
+                  new_k = k + n
+                  cn = new_k
+                  pbc_z = 0.0
+                  # -----------------------------------------------------
+                  # Dealing with periodic boundary conditions along z-axis
+                  if new_k < 0:
+                    new_k = MaxCells_Z - 1
+                    pbc_z = -1.0 * config.box_zz
+                  if new_k > MaxCells_Z - 1:
+                    new_k = 0
+                    pbc_z = config.box_zz
+                  # debugging
+                  # if i==0 and j==0 and k==0:
+                  #  print ("%d %d %d %d %d %d   atom1_id %d") %(l,m,n,an,bn,cn,atom1_id)
+
+                  # -----------------------------------------------------
+                  # This is a trick to avoid double counting the interactions if the two atoms are in the same cell
+                  temp = 0
+                  if i == new_i and j == new_j and k == new_k:
+                    temp = atom1 + 1
+                  # selecting the neighbour atom
+                  for atom2 in range(temp, cell_atoms_count[new_i][new_j][new_k]):
+                    atom2_id = cell_atoms_list[new_i][new_j][new_k][atom2]
+                    temp_atm1=atom_type_num2sym[atom_type[atom1_id]]
+                    temp_atm2=atom_type_num2sym[atom_type[atom2_id]]
+                    if ( temp_atm1 in given_anions and temp_atm2 in given_cations) or (temp_atm1 in given_cations and temp_atm2 in given_anions):
+                      pos_x2 = atom_posx[atom2_id] + pbc_x
+                      pos_y2 = atom_posy[atom2_id] + pbc_y
+                      pos_z2 = atom_posz[atom2_id] + pbc_z
+
+                      r = np.linalg.norm(np.array([pos_x1, pos_y1, pos_z1]) - np.array([pos_x2, pos_y2, pos_z2]))
+                      if r < rcut and r > 0.2: # rcut value is excluded
+                        temp_bin=int(1.0*r/bin_size)
+                        if temp_atm1 in given_cations:
+                          temp3={(temp_atm1,temp_atm2,temp_bin):gr[(temp_atm1,temp_atm2,temp_bin)]+1}
+                        else :
+                          temp3 = {(temp_atm2, temp_atm1, temp_bin): gr[(temp_atm2, temp_atm1, temp_bin)] + 1}
+                        gr.update(temp3)
+    self.gr=gr
