@@ -31,5 +31,9 @@ The main intension of these programs is to post-process the output files of the 
 
 7) 007_StructureGeneration			: generate the structure of desired composition by placing the atoms randomly 
 
+8) 008_structural_properties_for_all_glasses	: a generalized programm for computing structural properties of any kind of glass
+
+9) 009_compute_pair_distribution		: computes pair distribution function of any glass composition (still need to normalize)
+
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
 
