@@ -9,6 +9,7 @@
 """
 import numpy as np
 import sys
+import itertools
 
 #class banner:
 def sudheer_banner():
@@ -1274,3 +1275,105 @@ class compute_Q:
         temp1 = {(atom_type_num2sym[config.type[i]], BridgingAnions_count): NetworkFormersList_non4coord}
         Q_non4CoordFormers_list.update(temp1)
         self.Q_non4CoordFormers_list=Q_non4CoordFormers_list
+'''
+class compute_anions_distribution:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing anions speciation
+  *
+  * usage: config1_anions_dist=ganisetti_tools.compute_anions_distribution(cmd,config,config_nnl,config_env,'Si')
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_QSi.Q_summary = {(Si,0):10,(Si,1):22, etc.}
+  *         config1_QSi.Q_status_atomid2num = {0:-1,1;-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
+  *         config1_QSi.Q_4CoordFormers_list = {(Si,0):[1,2,3,etc.],(Si,1):[1,2,3,etc.]}
+  *         config1_QSi.Q_non4CoordFormers_list = {(Si,1):[1,2,3, etc],(Al,1)}
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self, cmd, config, config_nnl, config_env):
+    self.Q_status_atomid2num      = {}
+    self.Q_summary                = {}
+    self.Q_4CoordFormers_list     = {}
+    self.Q_non4CoordFormers_list  = {}
+    atom_type_sym2num = cmd.atom_type_sym2num
+    atom_type_num2sym = cmd.atom_type_num2sym
+    given_anions_sym2num = cmd.given_anions_sym2num
+    given_cations_sym2num = cmd.given_cations_sym2num
+    given_formers_sym2num = cmd.given_formers_sym2num
+    given_modifiers_sym2num = cmd.given_modifiers_sym2num
+
+    bonds_count={}
+    total_bonds_count={}
+    total_atom_types={}
+    total_atom_types.update(given_anions_sym2num)
+    total_atom_types.update(given_cations_sym2num)
+    for i in total_atom_types:
+      temp1={i:0}
+      total_bonds_count.update(temp1)
+
+    for i in config.id:
+      for j in config_nnl.nnl[i]:
+        temp1={atom_type_num2sym[config.type[j]]:bonds_count[atom_type_num2sym[config.type[j]]]+1}
+      if config.type[i] in given_anions_sym2num.values(): # i = anion
+        for j in config_nnl.nnl[i]: # j = neighbouring cations
+          temp1={atom_type_num2sym[config.type[j]]:bonds_count[atom_type_num2sym[config.type[j]]]+1}
+          bonds_count.update(temp1)
+'''
+class compute_triplets:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing triplets
+  *
+  * usage: config1_triplets=ganisetti_tools.compute_triplets(cmd,config,config_nnl)
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_triplets.triplets_AmBCn2count = {(A,m,B,C,n):count, etc.} # A-B-C
+  *         config1_triplets.total_triplets_sym2count= {O:100,Si:120,etc.} O, Si are cetral atoms
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self, cmd, config, config_nnl):
+    self.triplets_AmBCn2count={}
+    self.total_triplets_sym2count={}
+    atom_type_sym2num = cmd.atom_type_sym2num
+    atom_type_num2sym = cmd.atom_type_num2sym
+    given_anions_sym2num = cmd.given_anions_sym2num
+    given_cations_sym2num = cmd.given_cations_sym2num
+    given_formers_sym2num = cmd.given_formers_sym2num
+    given_modifiers_sym2num = cmd.given_modifiers_sym2num
+
+    triplets_count  = {}
+    total_triplets  = {}
+
+    for i in atom_type_sym2num.keys():       # This is B in A-B-C
+      for j in atom_type_sym2num.keys():     # This is A in A-B-C
+        for k in atom_type_sym2num.keys():   # This is C in A-B-C
+          for m in range(config_nnl.max_nnl_each_atom_type_sym[j] + 1):
+            for n in range(config_nnl.max_nnl_each_atom_type_sym[k] + 1):
+              temp1={(j,m,i,k,n):0}
+              triplets_count.update(temp1)
+      temp2={i:0}
+      total_triplets.update(temp2)
+
+    for i in config.id:
+      if config_nnl.nnl_count[i] > 1:
+        B = atom_type_num2sym[config.type[i]] # B is the middle atom in A-B-C
+        for j in list( itertools.combinations(config_nnl.nnl[i], 2) ): # j=all combinations of (A and C) in A-B-C
+          A = atom_type_num2sym[config.type[j[0]]]
+          C = atom_type_num2sym[config.type[j[1]]]
+          m=config_nnl.nnl_count[j[0]]
+          n=config_nnl.nnl_count[j[1]]
+
+          temp1={(A,m,B,C,n):triplets_count[(A,m,B,C,n)]+1}
+          triplets_count.update(temp1)
+
+          temp2={B:total_triplets[B]+1}
+          total_triplets.update(temp2)
+    self.triplets_AmBCn2count=triplets_count
+    self.total_triplets_sym2count=total_triplets
+

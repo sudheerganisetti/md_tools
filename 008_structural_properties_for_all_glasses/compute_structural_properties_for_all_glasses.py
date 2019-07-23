@@ -117,6 +117,12 @@ if __name__=="__main__":
   # **************************************************************************************
   # compute environment of each atom
   config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num,atom_type_num2sym)
+  '''
+  for i in config1.id:
+      for j in given_anions_sym2num.values():
+        if config1.type[i] == j:
+          for k in config1_env.env_atomid[i]:
+  '''
 
 
   # **************************************************************************************
@@ -139,11 +145,31 @@ if __name__=="__main__":
     output1.write("# Q(n) speciation of %s\n" %(i))
     output1.write("# n  number_of_units\n")
     for j in range(5):
-      #output1.write("%d %d\t%.2lf \n" % (j, config1_Q.Q_summary[(i,j)], config1_Q.Q_summary[(i,j)] * 100.0 / total_atoms_of_type_sym[i]))
-       print(config1_Q.Q_non4CoordFormers_list[i,j])
+      output1.write("%d %d\t%.2lf \n" % (j, config1_Q.Q_summary[(i,j)], config1_Q.Q_summary[(i,j)] * 100.0 / total_atoms_of_type_sym[i]))
+      #print(config1_Q.Q_non4CoordFormers_list[i,j])
     output1.close()
   #for i in config1.id:
   #  if config1.type[i] in given_formers_sym2num.values():
   #    print(config1.type[i],config1_Q.Q_status_atomid2num[i])
 
+  # **************************************************************************************
+  # compute triplets
+  config1_triplets=ganisetti_tools.compute_triplets(cmd,config1,config1_nnl)
+  #for i in atom_type_sym2num.keys():
+  #  print(i,config1_triplets.total_triplets_sym2count[i])
+
+  output1=open(BASE_FILE+str("_triplets.data"),'w')
+  output1.write("# Triplets based on anions\n")
+  for i in atom_type_sym2num.keys():                                         # This is B in A-B-C
+    if i in given_anions_sym2num.keys():
+      temp1=config1_triplets.total_triplets_sym2count[i]
+      output1.write("\n# Total triplets with centered with %s = %d\n" %(i,temp1))
+      for j in atom_type_sym2num.keys():                                       # This is A in A-B-C
+        for k in atom_type_sym2num.keys():                                     # This is C in A-B-C
+          for m in range(config1_nnl.max_nnl_each_atom_type_sym[j] + 1):
+            for n in range(config1_nnl.max_nnl_each_atom_type_sym[k] + 1):
+              temp2=config1_triplets.triplets_AmBCn2count[(j,m,i,k,n)]
+              if temp2 != 0:
+                output1.write("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
+                #print("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
 
