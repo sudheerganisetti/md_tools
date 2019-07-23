@@ -121,6 +121,8 @@ if __name__=="__main__":
 
   # **************************************************************************************
   # compute Q of each network former
+  '''
+  # This is deprecated
   for i in given_formers_sym2num.keys():
     output1=open(BASE_FILE+str("_Q")+str(i)+str(".data"),'w')
     output1.write("# Q(n) speciation of %s\n" %(i))
@@ -129,3 +131,19 @@ if __name__=="__main__":
     for j in range(5):
       output1.write("%d %d\t%.2lf \n" %(j,config1_Q.Q[j],config1_Q.Q[j]*100.0/total_atoms_of_type_sym[i]))
     output1.close()
+  '''
+
+  config1_Q=ganisetti_tools.compute_Q(cmd,config1,config1_nnl,config1_env)
+  for i in given_formers_sym2num.keys():
+    output1=open(BASE_FILE+str("_Q")+str(i)+str(".data"),'w')
+    output1.write("# Q(n) speciation of %s\n" %(i))
+    output1.write("# n  number_of_units\n")
+    for j in range(5):
+      #output1.write("%d %d\t%.2lf \n" % (j, config1_Q.Q_summary[(i,j)], config1_Q.Q_summary[(i,j)] * 100.0 / total_atoms_of_type_sym[i]))
+       print(config1_Q.Q_non4CoordFormers_list[i,j])
+    output1.close()
+  #for i in config1.id:
+  #  if config1.type[i] in given_formers_sym2num.values():
+  #    print(config1.type[i],config1_Q.Q_status_atomid2num[i])
+
+

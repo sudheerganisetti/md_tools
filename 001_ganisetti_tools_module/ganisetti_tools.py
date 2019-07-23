@@ -1111,7 +1111,7 @@ class compute_pair_distribution:
                         gr.update(temp3)
     self.gr=gr
 
-class compute_Q:
+class compute_Q_deprecated:
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * Computing Qn speciation
@@ -1122,10 +1122,12 @@ class compute_Q:
   *         cmd     = ganisetti_tools.read_command_line(sys.argv)
   *
   * output: config1_QSi.Q = list(Q[0],Q[1],Q[2],Q[3] and Q[4])
+  *         config1_QSi.Q_status_atomid2num = {0:-1,1;-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,cmd,config,config_nnl,config_env,T):
+    self.Q_status_atomid2num={}
     atom_type_sym2num = cmd.atom_type_sym2num
     atom_type_num2sym = cmd.atom_type_num2sym
     given_anions_sym2num = cmd.given_anions_sym2num
@@ -1134,10 +1136,11 @@ class compute_Q:
     given_modifiers_sym2num = cmd.given_modifiers_sym2num
     Q=[0 for i in range(5)]
 
-    #temp1={}
-    #for i in given_anions_sym2num.keys():
-    #  temp2={i:0}
-    #  temp1.update(temp2)
+    Q_status_atomid2num={}
+    Q_neighboring_formers_list_atomid2list={}
+    for i in config.id:
+      temp1={i:-1}
+      Q_status_atomid2num.update(temp1)
 
     for i in config.id:
       if atom_type_num2sym[config.type[i]] == T and config_nnl.nnl_count[i] == 4:
@@ -1162,6 +1165,8 @@ class compute_Q:
           else:
             NBA_count = NBA_count + 1
         Q[BA_count] = Q[BA_count] + 1
+        temp1={i:BA_count}
+        Q_status_atomid2num.update(temp1)
         '''
           for l in given_formers_sym2num.keys(): # l=Si,Al,P
             for m in range(config_nnl.max_nnl_each_atom_type_sym[l]+1): # m = 0 to 5
@@ -1180,3 +1185,92 @@ class compute_Q:
         Q[BA_count]=Q[BA_count]+1
         '''
     self.Q=Q
+    self.Q_status_atomid2num
+
+class compute_Q:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing Qn speciation
+  *
+  * usage: config1_QSi=ganisetti_tools.compute_Q(cmd,config,config_nnl,config_env,'Si')
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_QSi.Q_summary = {(Si,0):10,(Si,1):22, etc.}
+  *         config1_QSi.Q_status_atomid2num = {0:-1,1;-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
+  *         config1_QSi.Q_4CoordFormers_list = {(Si,0):[1,2,3,etc.],(Si,1):[1,2,3,etc.]}
+  *         config1_QSi.Q_non4CoordFormers_list = {(Si,1):[1,2,3, etc],(Al,1)}
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self, cmd, config, config_nnl, config_env):
+    self.Q_status_atomid2num      = {}
+    self.Q_summary                = {}
+    self.Q_4CoordFormers_list     = {}
+    self.Q_non4CoordFormers_list  = {}
+    atom_type_sym2num = cmd.atom_type_sym2num
+    atom_type_num2sym = cmd.atom_type_num2sym
+    given_anions_sym2num = cmd.given_anions_sym2num
+    given_cations_sym2num = cmd.given_cations_sym2num
+    given_formers_sym2num = cmd.given_formers_sym2num
+    given_modifiers_sym2num = cmd.given_modifiers_sym2num
+
+    Q_summary               = {}
+    Q_status_atomid2num     = {}
+    Q_4CoordFormers_list    = {}
+    Q_non4CoordFormers_list = {}
+    for i in given_formers_sym2num.keys():
+      for j in range(5):
+        temp1 = {(i,j):0}
+        Q_summary.update(temp1)
+        temp1 = {(i,j):[]}
+        Q_4CoordFormers_list.update(temp1)
+        Q_non4CoordFormers_list.update(temp1)
+    for i in config.id:
+      temp1={i:-1}
+      Q_status_atomid2num.update(temp1)
+
+    for i in config.id:
+      if config.type[i] in given_formers_sym2num.values() and config_nnl.nnl_count[i] == 4: # the main Q cation with 4 coordination
+        BridgingAnions_count            = 0   # for atom i
+        NonBridgingAnions_count         = 0   # for atom i
+        Triplet_NonBridgingAnions_count = 0   # for atom i
+        NetworkFormersList_4coord       = []  # for atom i
+        NetworkFormersList_non4coord    = []  # for atom i
+        for j in config_nnl.nnl[i]: # j = Q neighbouring anions: O1,O2,O3,O4
+          Anion_4CoordinatedNetworkFormers_count    = 0 # for atom j
+          Anion_non4CoordinatedNetworkFormers_count = 0 # for atom j
+          for k in config_nnl.nnl[j]: # k =Q neighboring cations Si,Si (including the Q cation)
+            if config.type[k] in given_formers_sym2num.values():
+              if config_nnl.nnl_count[k] == 4:
+                Anion_4CoordinatedNetworkFormers_count=Anion_4CoordinatedNetworkFormers_count+1
+                NetworkFormersList_4coord.append(k)   # This is for Si[4]-O-Si[4], Si[4]-O-Al[4], etc
+              else :
+                Anion_non4CoordinatedNetworkFormers_count=Anion_non4CoordinatedNetworkFormers_count+1
+                NetworkFormersList_non4coord.append(k) # This is for Si[4]-O-Si[4], Si[4]-O-Al[5], etc
+          if Anion_4CoordinatedNetworkFormers_count == 2:
+            BridgingAnions_count            = BridgingAnions_count+1
+          elif Anion_4CoordinatedNetworkFormers_count == 1:
+            NonBridgingAnions_count         = NonBridgingAnions_count+1
+          elif Anion_4CoordinatedNetworkFormers_count == 3:
+            Triplet_NonBridgingAnions_count = Triplet_NonBridgingAnions_count+1
+        temp1={(atom_type_num2sym[config.type[i]],BridgingAnions_count):Q_summary[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]+1}
+        Q_summary.update(temp1)
+        self.Q_summary=Q_summary
+
+        temp1={i:BridgingAnions_count}
+        Q_status_atomid2num.update(temp1)
+        self.Q_status_atomid2num=Q_status_atomid2num
+
+        NetworkFormersList_4coord=NetworkFormersList_4coord+Q_4CoordFormers_list[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]
+        NetworkFormersList_4coord=list(dict.fromkeys(NetworkFormersList_4coord))
+        temp1 = {(atom_type_num2sym[config.type[i]],BridgingAnions_count):NetworkFormersList_4coord}
+        Q_4CoordFormers_list.update(temp1)
+        self.Q_4CoordFormers_list=Q_4CoordFormers_list
+
+        NetworkFormersList_non4coord = NetworkFormersList_non4coord + Q_non4CoordFormers_list[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]
+        NetworkFormersList_non4coord = list(dict.fromkeys(NetworkFormersList_non4coord))
+        temp1 = {(atom_type_num2sym[config.type[i]], BridgingAnions_count): NetworkFormersList_non4coord}
+        Q_non4CoordFormers_list.update(temp1)
+        self.Q_non4CoordFormers_list=Q_non4CoordFormers_list
