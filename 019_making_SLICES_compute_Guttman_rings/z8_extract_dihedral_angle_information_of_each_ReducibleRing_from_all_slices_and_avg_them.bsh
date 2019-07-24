@@ -1,0 +1,110 @@
+#!/bin/bash -l
+# Sudheer Ganisetti, So 6. Mär 01:50:03 CET 2016
+# Script to average the dihedral angles in all the slices for each ring where the rings data were already calculated with rings code
+# Here I am calculating the distances from Reducible rings ; diedral-irr-2.dat
+# How to run: ./this_script 
+# Output = AverageSlice_EachRing_DihedralAngles.data
+# Careful: Numbering Rings, Numbering Slices
+# Formula I used to store the array is = SliceNumber*MaxRingNumber+RingNumber
+# In the calculation SliceNumber starts from 0 and also RingNumber starts from 0 but 
+# In reality SliceNumber starts from 1 and RingNumber starts from 4 with an increment of 2
+# Considering rings are 4,6,8,10,12,14,16,18,20 i.e {0..8}
+
+echo 1 > AverageSlice_EachReducibleRing_DihedralAngles.data
+rm -rf AverageSlice_EachReducibleRing_DihedralAngles.data
+echo "#Ring_Size	DihedraslAngle	No_of_Slices;	`date`" > AverageSlice_EachReducibleRing_DihedralAngles.data
+
+SliceNo=0;
+Total_Slices=0;
+declare -a angle_DA
+#declare -a length_SiOSi
+declare -a SLICE_COUNT1
+#declare -a SLICE_COUNT2
+#declare -a SLICE_COUNT3
+
+# Counting total slices
+#*************************************
+for i1 in */ ;                                  # Slices
+do
+Total_Slices=$(( $Total_Slices + 1 ));
+done
+echo Total_Slices= $Total_Slices
+echo "#" Total_Slices= $Total_Slices >> AverageSlice_EachReducibleRing_DihedralAngles.data
+#*************************************
+
+# Initialization of arrays
+#**************************************
+for ((i4=0; i4<$Total_Slices; i4++))            # Slices
+do
+for j4 in {0..8}                                # Rings
+do
+array_number=$(( $i4*9+$j4 ))
+angle_DA[$array_number]=0
+RingNo=$(( $j4*2+4 ))
+SLICE_COUNT1[$RingNo]=0
+done
+done
+
+# Getting the information from all slices each ring from ring number 4 to 20
+#**************************************
+for i2 in */ ;                                  # Each Slice in the folder
+do
+cd $i2
+cd 01_rings_code/rstat/prop-2/
+#eval CONTROLLER=( $(awk '{if($1=="") {print NR} }' angular-irr-2.dat) )
+#CONTROLLER1=${CONTROLLER[0]}
+#CONTROLLER2=${CONTROLLER[1]}
+#CONTROLLER3=${CONTROLLER[2]}
+
+for j2 in {0..8}                               # Rings
+do
+RingNo=$(( $j2*2+4 ))
+array_number=$(( $SliceNo*9+$j2 ))
+
+temp_angle_DA=$(awk -v RingNo=$RingNo '{if($1==RingNo) {print $2} }' diedral-red-2.dat) ;
+temp_angle_DA1=$(echo "$temp_angle_DA*100000" | bc)
+temp_angle_DA2=${temp_angle_DA1%.*}
+#echo $temp_angle_DA2
+if [ -z "$temp_angle_DA" ]
+then
+angle_DA[$array_number]=0;
+elif [ "$temp_angle_DA2" -eq 0 ]
+then
+angle_DA[$array_number]=0;
+else
+angle_DA[$array_number]=$temp_angle_DA;
+SLICE_COUNT1[$RingNo]=$(( ${SLICE_COUNT1[$RingNo]} + 1 ))
+fi
+
+done
+
+cd ../../../../
+#echo folder= $i , SliceNo = $SliceNo
+SliceNo=$(( $SliceNo + 1))
+done
+#****************************************
+
+# Calculate the sum and then the average over all slices then output
+#****************************************
+for j3 in {0..8}  # Rings
+do
+RingNo=$(( $j3*2+4 ))
+Sum1=0
+for ((i3=0;i3<$Total_Slices;i3++))
+do
+array_number=$(( $i3*9+$j3 ))
+Sum1=$(echo "${angle_DA[$array_number]} + $Sum1" | bc ) ;
+done
+
+if [ ${SLICE_COUNT1[$RingNo]} -eq 0 ]
+then
+Avg_DA=0
+else
+Avg_DA=$(echo "scale=3; $Sum1/${SLICE_COUNT1[$RingNo]}" | bc )
+fi
+
+
+echo $RingNo  $Avg_DA  ${SLICE_COUNT1[$RingNo]}  >> AverageSlice_EachReducibleRing_DihedralAngles.data
+done
+#*****************************************
+

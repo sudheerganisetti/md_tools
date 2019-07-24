@@ -1,0 +1,152 @@
+#!/bin/bash -l
+# Sudheer Ganisetti, So 6. Mär 01:50:03 CET 2016
+# Script to average the bond lengths in all the slices for each ring where the rings data were already calculated with rings code
+# Here I am calculating the distances from Irreducable rings ; angular-irr-2.dat
+# How to run: ./this_script 
+# Output = AverageSlice_EachRing_Angles.data
+# Careful: Numbering Rings, Numbering Slices
+# Formula I used to store the array is = SliceNumber*MaxRingNumber+RingNumber
+# In the calculation SliceNumber starts from 0 and also RingNumber starts from 0 but 
+# In reality SliceNumber starts from 1 and RingNumber starts from 4 with an increment of 2
+# Considering rings are 4,6,8,10,12,14,16,18,20 i.e {0..8}
+
+echo 1 > AverageSlice_EachIrreducibleRing_Angles.data
+rm -rf AverageSlice_EachIrreducibleRing_Angles.data
+echo "#Ring_Size	Angle_of_OSiO	Angle_of_SiOSi	No_of_Slices_OSiO	No_of_Slices_SiOSi;	`date`" > AverageSlice_EachIrreducibleRing_Angles.data
+
+SliceNo=0;
+Total_Slices=0;
+declare -a length_OSiO
+declare -a length_SiOSi
+declare -a SLICE_COUNT1
+declare -a SLICE_COUNT2
+declare -a SLICE_COUNT3
+
+# Counting total slices
+#*************************************
+for i1 in */ ;                                  # Slices
+do
+Total_Slices=$(( $Total_Slices + 1 ));
+done
+echo Total_Slices= $Total_Slices
+echo "#" Total_Slices= $Total_Slices >> AverageSlice_EachIrreducibleRing_Angles.data
+#*************************************
+
+# Initialization of arrays
+#**************************************
+for ((i4=0; i4<$Total_Slices; i4++))            # Slices
+do
+for j4 in {0..8}                                # Rings
+do
+array_number=$(( $i4*9+$j4 ))
+length_OSiO[$array_number]=0
+length_SiOSi[$array_number]=0
+RingNo=$(( $j4*2+4 ))
+SLICE_COUNT1[$RingNo]=0
+SLICE_COUNT2[$RingNo]=0
+SLICE_COUNT3[$RingNo]=0
+done
+done
+
+# Getting the information from all slices each ring from ring number 4 to 20
+#**************************************
+for i2 in */ ;                                  # Each Slice in the folder
+do
+cd $i2
+cd 01_rings_code/rstat/prop-2/
+eval CONTROLLER=( $(awk '{if($1=="") {print NR} }' angular-irr-2.dat) )
+CONTROLLER1=${CONTROLLER[0]}
+CONTROLLER2=${CONTROLLER[1]}
+CONTROLLER3=${CONTROLLER[2]}
+
+for j2 in {0..8}                               # Rings
+do
+RingNo=$(( $j2*2+4 ))
+array_number=$(( $SliceNo*9+$j2 ))
+
+temp_length_OSiO=$(awk -v RingNo=$RingNo -v CONTROLLER1=$CONTROLLER1 '{if(($1==RingNo)&&(NR<CONTROLLER1)) {print $2} }' angular-irr-2.dat) ;
+if [ -z "$temp_length_OSiO" ]
+then
+length_OSiO[$array_number]=0;
+else
+length_OSiO[$array_number]=$temp_length_OSiO;
+SLICE_COUNT1[$RingNo]=$(( ${SLICE_COUNT1[$RingNo]} + 1 ))
+fi
+
+temp_length_SiOSi=$(awk -v RingNo=$RingNo -v CONTROLLER1=$CONTROLLER1 '{if(($1==RingNo)&&(NR>CONTROLLER1)) {print $2} }' angular-irr-2.dat) ;
+if [ -z "$temp_length_SiOSi" ]
+then
+length_SiOSi[$array_number]=0;
+else
+length_SiOSi[$array_number]=$temp_length_SiOSi;
+SLICE_COUNT2[$RingNo]=$(( ${SLICE_COUNT2[$RingNo]} + 1 ))
+fi
+
+
+result=$(echo " ${length_OSiO[$array_number]} > ${length_SiOSi[$array_number]}" | bc )
+if [ $result -eq "1" ]
+then
+temp_result=${length_OSiO[$array_number]}
+length_OSiO[$array_number]=${length_SiOSi[$array_number]}
+length_SiOSi[$array_number]=$temp_result
+
+temp_slice=${SLICE_COUNT1[$RingNo]}
+SLICE_COUNT1[$RingNo]=${SLICE_COUNT2[$RingNo]}
+SLICE_COUNT2[$RingNo]=$temp_slice
+fi
+
+
+
+done
+
+cd ../../../../
+#echo folder= $i , SliceNo = $SliceNo
+SliceNo=$(( $SliceNo + 1))
+done
+#****************************************
+
+# Calculate the sum and then the average over all slices then output
+#****************************************
+for j3 in {0..8}  # Rings
+do
+RingNo=$(( $j3*2+4 ))
+Sum1=0
+Sum2=0
+Sum3=0
+for ((i3=0;i3<$Total_Slices;i3++))
+do
+array_number=$(( $i3*9+$j3 ))
+Sum1=$(echo "${length_OSiO[$array_number]} + $Sum1" | bc ) ;
+Sum2=$(echo "${length_SiOSi[$array_number]} + $Sum2" | bc ) ;
+done
+
+if [ ${SLICE_COUNT1[$RingNo]} -eq 0 ]
+then
+Avg_OSiO=0
+else
+Avg_OSiO=$(echo "scale=3; $Sum1/${SLICE_COUNT1[$RingNo]}" | bc )
+fi
+
+if [ ${SLICE_COUNT2[$RingNo]} -eq 0 ]
+then
+Avg_SiOSi=0
+else
+Avg_SiOSi=$(echo "scale=3; $Sum2/${SLICE_COUNT2[$RingNo]}" | bc )
+fi
+
+#result=$(echo "$Avg_OSiO > $Avg_SiOSi" | bc )
+#if [ $result -eq "1" ]
+#then
+#temp_result=$Avg_OSiO
+#Avg_OSiO=$Avg_SiOSi
+#Avg_SiOSi=$temp_result
+
+#temp_slice=${SLICE_COUNT1[$RingNo]}
+#SLICE_COUNT1[$RingNo]=${SLICE_COUNT2[$RingNo]}
+#SLICE_COUNT2[$RingNo]=$temp_slice
+#fi
+
+echo $RingNo  $Avg_OSiO  $Avg_SiOSi  ${SLICE_COUNT1[$RingNo]} ${SLICE_COUNT2[$RingNo]}  >> AverageSlice_EachIrreducibleRing_Angles.data
+done
+#*****************************************
+

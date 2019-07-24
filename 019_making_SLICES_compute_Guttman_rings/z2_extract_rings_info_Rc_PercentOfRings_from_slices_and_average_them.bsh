@@ -1,0 +1,102 @@
+#!/bin/bash -l
+# Sudheer Ganisetti, Sa 5. Mär 08:44:14 CET 2016
+# Script to average the rings of each node from all the slices rings data calculated with rings code
+# Here I am calculating the rings; evol-r-2.dat
+# How to run: ./this_script 
+# Output = 
+# Careful: Numbering Rings, Numbering Slices
+# Formula I used to store the array is = SliceNumber*MaxRingNumber+RingNumber
+# In the calculation SliceNumber starts from 0 and also RingNumber starts from 0 but 
+# In reality SliceNumber starts from 1 and RingNumber starts from 4 with an increment of 
+# Rings need to look are 4,6,8,10,12,14,16,18,20 => total = 9
+
+echo 1 > RingNo_Rc__AverageOfAllSlices.data
+rm -rf  RingNo_Rc__AverageOfAllSlices.data
+echo "#Ring_Size        Avg_Rc_perSlice   Avg_Percent_of_EachRing ; `date`" > RingNo_Rc__AverageOfAllSlices.data
+
+SliceNo=0;
+Total_Slices=0;
+declare -a Rc
+declare -a PercentOfEachRingSize
+
+# Counting total slices
+#*************************************
+for i1 in */ ;                                  # Slices
+do
+Total_Slices=$(( $Total_Slices + 1 ));
+done
+echo Total_Slices= $Total_Slices
+echo "# Total_Slices=" $Total_Slices >> RingNo_Rc__AverageOfAllSlices.data
+#*************************************
+
+# Initialization of arrays
+#**************************************
+for ((i4=0; i4<$Total_Slices; i4++))            # Slices
+do
+for j4 in {0..8}                                # Rings
+do
+array_number=$(( $i4*9+$j4 ))
+Rc[$array_number]=0
+PercentOfEachRingSize[$array_number]=0
+done
+done
+
+
+# Getting the information from all slices each ring from ring number 4 to 20
+#**************************************
+for i2 in */ ;                                  # Each Slice in the folder
+do
+cd $i2
+cd 01_rings_code/rstat/
+
+tempTotRings=$(grep "Total number of rings:" evol-r-2.dat | awk '{print $5}')
+for j2 in {0..8}                               # Rings
+do
+RingNo=$(( $j2*2+4 ))
+array_number=$(( $SliceNo*9+$j2 ))
+
+tempRc=$(awk -v RingNo=$RingNo '{if($1==RingNo) {print $3} }' evol-r-2.dat) ;
+tempNumRings=$(awk -v RingNo=$RingNo '{if($1==RingNo) {print $2} }' evol-r-2.dat) ;
+tempPercentOfEachRingSize=$(echo "scale=5; $tempNumRings*100/$tempTotRings" | bc )
+
+Rc[$array_number]=$tempRc;
+PercentOfEachRingSize[$array_number]=$tempPercentOfEachRingSize;
+
+#if [ -z "$tempRc" ]
+#then
+#Rc[$array_number]=0;
+#else
+#Rc[$array_number]=$tempRc;
+#SLICE_COUNT1[$RingNo]=$(( ${SLICE_COUNT1[$RingNo]} + 1 ))
+#fi
+
+done
+
+cd ../../../
+#echo folder= $i , SliceNo = $SliceNo
+SliceNo=$(( $SliceNo + 1))
+done
+#****************************************
+
+# Calculate the sum and then the average over all slices then output
+#****************************************
+for j3 in {0..8}  # Rings
+do
+RingNo=$(( $j3*2+4 ))
+Sum1=0
+Sum2=0
+for ((i3=0;i3<$Total_Slices;i3++))
+do
+array_number=$(( $i3*9+$j3 ))
+Sum1=$(echo "${Rc[$array_number]} + $Sum1" | bc ) ;
+Sum2=$(echo "${PercentOfEachRingSize[$array_number]} + $Sum2" | bc ) ;
+done
+
+Avg_Rc=$(echo "scale=5; $Sum1/$Total_Slices" | bc )
+Avg_PercentOfEachRingSize=$(echo "scale=5; $Sum2/$Total_Slices" | bc )
+
+echo $RingNo  "   " $Avg_Rc  "   " $Avg_PercentOfEachRingSize >> RingNo_Rc__AverageOfAllSlices.data
+done
+#echo $MAX_SLICES
+#*****************************************
+
