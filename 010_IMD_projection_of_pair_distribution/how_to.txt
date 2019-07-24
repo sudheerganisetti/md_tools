@@ -1,0 +1,14 @@
+Sudheer
+
+
+
+
+Using Projected RDF's
+
+i.e for a vector r=ax+by+cz
+
+1) Looking at SUM(a/r) with in radius r0
+2) Porbability 'a' with in r0
+
+ 
+
