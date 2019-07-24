@@ -1,0 +1,31 @@
+#! /bin/bash
+INPUT=I_Am_Sudheer.txt
+#array[100];
+i=1
+while read -r line
+do 
+ for word in $line
+ do
+   array[$i]=$word;
+   i=$(( $i + 1 ));
+ done
+done
+
+i=$(( $i - 1 ));
+#for j in "${array[@]}"
+#do 
+#echo $j
+#done
+
+awk -v i=$i -vd="${array[*]}" 'BEGIN{split(d,awkarray, " ")} { if( for(j=1;j<i;j++) { ($1==awkarray[j]) ||} ($1==awkarray[i]) ) {print $0}  }' $INPUT
+
+#for j in $(eval echo "{1..$i}")
+#do
+#echo "${array[$j]}"
+#p=${array[$j]}
+#echo $p
+#done
+
+#read -a words
+#echo "${words[@]}"
+

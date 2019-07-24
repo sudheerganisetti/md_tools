@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#chkpt=$1
+selectedAtoms=$1
+
+for i in {00000..00104}
+do
+echo $i $selectedAtoms
+
+~/bin/x86_64/ChangingAtomTypeOfSelectedAtoms $i $selectedAtoms 
+done
+
