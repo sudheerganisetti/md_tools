@@ -1,0 +1,57 @@
+#! /bin/bash
+# The atom numbers from the RingsDataList are fake atom numbers i.e based on the atom position in xyz file (but they are not the real atom number identifications from IMD)
+# So what I am doing here is
+# 1) Read the fake identification numbers from the RingsDataList
+# 2) with this we can find what is the position (i.e line number) in the xyz file
+# 3) with this we can find what the position (i.e line number) in IMD file
+# 4) get the atom number from that position (i.e from that line)
+#In this script, you can control number of lines (i.e number of rings) need to reed from the RingsDataFile
+#and also Size of the Ring
+#./collecting_atom_numbers_for_chhkpt_files_based_on_rings_list_from_rings_code.bsh      RingsDataList   Chkptfile.chkpt 
+
+
+RingsDataList=$1
+ChkptFile=$2
+NumRings=6
+NumLines=2
+ATOMCOUNTER=0
+Lines_LowerLimit=1
+Lines_UpperLimit=$(echo "$NumLines+$Lines_LowerLimit" | bc)
+
+touch AtomNumbers_BelongsTo_chkpt_file_Of_SelectedRings.data;
+rm -rf AtomNumbers_BelongsTo_chkpt_file_Of_SelectedRings.data;
+
+declare -a atom_nums
+declare -a AtomsList
+#declare -a ChkptFileAtomNumbers
+declare -a xyzFileAtomNumbers
+
+#ExpectedAtoms=$(echo "$NumRings*$NumLines" | bc)
+eval atom_nums=( $(awk -v i=$Lines_LowerLimit -v j=$Lines_UpperLimit '{if((NR>=i)&&(NR<j)) {print $0} }' $RingsDataList))
+ExpectedAtoms=${#atom_nums[@]}
+
+for ((i1 = 0; i1 < $ExpectedAtoms ; i1++ ));
+do
+
+re='^[0-9]+$'
+if [[ ${atom_nums[$i1]} =~ $re ]] ;
+then
+AtomsList[$ATOMCOUNTER]=${atom_nums[$i1]}
+#echo ${atom_nums[$i1]}, ${AtomsList[$ATOMCOUNTER]}
+ATOMCOUNTER=$(echo "$ATOMCOUNTER+1" | bc );
+
+fi
+
+done
+
+eval Num_Comment_Lines=( $(awk 'BEGINE{i=0}{if((NR<15)&&($0 ~ "#")) {i=i+1} }END{print i}' $ChkptFile)) 
+#echo $Num_Comment_Lines
+
+for ((i1 = 0; i1 < $ATOMCOUNTER; i1++))
+do
+xyzFileAtomNumbers[$i1]=$(echo "${AtomsList[$i1]}+$Num_Comment_Lines" | bc)
+eval ChkptFileAtomNumbers=( $(awk -v i=${xyzFileAtomNumbers[$i1]} '{if(($0 !~ "#")&&(NR == i)) {print $1} }' $ChkptFile))
+
+echo $ChkptFileAtomNumbers >> AtomNumbers_BelongsTo_chkpt_file_Of_SelectedRings.data
+done
+
