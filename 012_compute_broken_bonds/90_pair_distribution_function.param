@@ -1,0 +1,11 @@
+# Sudheer, 24/11/2014
+# KERMODE potentials for Silica: JCP 133, 094102 (2010)
+
+coordname       old_input
+outfiles        pair_bond
+
+box_from_header 1
+pbc_dirs        1 1 1
+ntypes          2
+nbl_margin      0.5
+nbl_size        1.2

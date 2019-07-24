@@ -1,0 +1,44 @@
+#! /bin/bash
+# script to compute Nearest Neighbour List of every chkpt and aslo
+# generate chkpts with additional info of total nearest neighbours, broken bonds, new bonds and switched bonds
+# 1st file is a reference file so start writing from the second file
+# dont forget to edit number of chkpts, reduced_file_name and full_file_name;
+
+
+
+START=0
+END=20
+reduced_file_name=29_dist_aquartz_72000au_ker_LinearQuench5000to300K20Kpps_CompSR5e8Z_Unload15
+
+for i in $(eval echo "{$START..$END}")
+do
+j=$( printf "%03d" $i);
+
+cp 90_pair_distribution_function.param temp.param
+
+full_file_name="$reduced_file_name.00"$j".chkpt"
+
+eval "sed -i -e s/old_input/$full_file_name/g temp.param"
+~/bin/x86_64/imd_nnl -e 3.4 -p temp.param
+
+echo $full_file_name
+done
+
+NEWEND=$(( $END - 1 ));
+for i in $(eval echo "{$START..$NEWEND}")
+do
+j=$(( $i + 1 ));
+k=$( printf "%03d" $i);
+l=$( printf "%03d" $j);
+
+file1="$reduced_file_name.00000.chkpt"
+file2="$reduced_file_name.00"$l".chkpt"
+nnlfile1="$file1.nnl"
+nnlfile2="$file2.nnl"
+
+~/bin/x86_64/nnl_chkpt $file1 $file2 $nnlfile1 $nnlfile2
+
+#echo $k, $l;
+
+done
+
