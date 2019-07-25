@@ -1378,7 +1378,7 @@ class compute_triplets:
     self.total_triplets_sym2count=total_triplets
 
 
-class compute_ion_distribution:
+class compute_ion_distribution_deprecated:
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * Computing given ion distribution among the given atoms
@@ -1388,8 +1388,8 @@ class compute_ion_distribution:
   * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
   *         cmd     = ganisetti_tools.read_command_line(sys.argv)
   *
-  * output: config1_triplets.triplets_AmBCn2count = {(A,m,B,C,n):count, etc.} # A-B-C
-  *         config1_triplets.total_triplets_sym2count= {O:100,Si:120,etc.} O, Si are cetral atoms
+  * output: config1_O_dist_among_formers.triplets_AmBCn2count = {(A,m,B,C,n):count, etc.} # A-B-C
+  *         config1_O_dist_among_formers.total_triplets= total number of triplets with O at centre
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -1440,3 +1440,204 @@ class compute_ion_distribution:
       self.bonds_in_triplets_sym2count  = bonds_count
       self.triplets_AmBCn2count         = triplets_count
       self.total_triplets               = total_triplets
+
+
+class compute_anions_distribution:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing all anions distribution among the given network formers
+  *
+  * usage: config1_ad=ganisetti_tools.compute_anions_distribution(cmd,config,config_nnl,O,given_formers_list)
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_ad.triplets_AmBCn2count = {(A,m,B,C,n):count, etc.} # gives the count of B atoms in as A-B-C
+  *         config1_ad.total_triplets= total number of triplets with O at centre
+  *         config1_ad.BA_4CoordFormer_id2list = {'O':[1,2,5,10,etc.]}  # 1 = Si[4], 2 = Si[4] => Si[4]-O-Si[4]
+  *         config1_ad.BA_non4CoordFormer_id2list = {'O':[3,6,29,etc.]} # 3 = Al[5], 6 = Si[4] => Al[5]-O-Si[4]
+  *         config1_ad.modifiers_id2list = {'O':[23,45,60,etc]} # if O is BA then these are charge compensators
+  *                                                             # if O is NBA then these are network modifiers
+  *         config1_ad.tri_cluster_former_id2list = {O:[21,27,29]} # tricluster atoms
+  *         config1_ad.NBA_former_id2list = {'O':[33,37,56]} # these are network formers in Si-NBO, Al-NBO, P-NBO etc
+  *         config1_ad.anions_with_zero_formers_id2list ={'O':[1,11,2]} these are list of anions connected to no former
+  *         config1_ad.anions_of_any_other_type_id2list ={'O':[22,13,66]} = Any_other_type_of_anion
+  *
+  *         config1_ad.total_anions_of_BA_4CoordFormer_sym2count    ={'O':20} total anions in Si[4]-O-Si[4]
+  *         config1_ad.total_anions_of_BA_non4CoordFormer_sym2count ={'O':31} total_anions in Al[5]-O-Si[4]
+  *         config1_ad.total_anions_of_tri_clusters_sym2count       ={'O':24} total anions in triclusters
+  *         config1_ad.total_anions_of_NBA_former_sym2count         ={'O':54} total anions in Si-NBO,Al-NBO, P-NBO
+  *         config1_ad.total_anions_with_zero_formers_sym2count     ={'O':76} total anions_connected_to_no_formers
+  *         config1_ad.total_anions_of_any_other_type_sym2count     ={'O':93} total of Any_other_type_anions
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self, cmd, config, config_nnl):
+    self.triplets_AmBCn2count={}
+    #self.bonds_in_triplets_sym2count={}
+
+    atom_type_sym2num         = cmd.atom_type_sym2num
+    atom_type_num2sym         = cmd.atom_type_num2sym
+    given_anions_sym2num      = cmd.given_anions_sym2num
+    given_cations_sym2num     = cmd.given_cations_sym2num
+    given_formers_sym2num     = cmd.given_formers_sym2num
+    given_modifiers_sym2num   = cmd.given_modifiers_sym2num
+
+    '''
+    bonds_count={}
+    for A in terminal_ions_sym_list:
+      temp_bonds_count={A:0}
+      bonds_count.update(temp_bonds_count)
+    '''
+    triplets_count={}
+    for B in given_anions_sym2num.keys():
+      for A in given_formers_sym2num.keys():
+        for m in range(config_nnl.max_nnl_each_atom_type_sym[A] + 1):
+          for C in given_formers_sym2num.keys():
+            for n in range(config_nnl.max_nnl_each_atom_type_sym[C] + 1):
+              temp_triplets_count={(A,m,B,C,n):0}
+              triplets_count.update(temp_triplets_count)
+
+    BA_4Coord_former                    = {}
+    BA_non4Coord_former                 = {}
+    tri_cluster_former                  = {}
+    NBA_former                          = {}
+    anions_connected_to_no_former       = {}
+    Any_other_type_anion                = {}
+    BA_4Coord_former_anion_count        = {}
+    BA_non4Coord_former_anion_count     = {}
+    NBA_former_anion_count              = {}
+    tri_cluster_former_anion_count      = {}
+    anions_connected_to_no_former_count = {}
+    Any_other_type_anion_count          = {}
+    for i in given_anions_sym2num.keys():
+      temp1={i:0}
+      BA_4Coord_former_anion_count.update(temp1)
+      BA_non4Coord_former_anion_count.update(temp1)
+      NBA_former_anion_count.update(temp1)
+      tri_cluster_former_anion_count.update(temp1)
+      anions_connected_to_no_former_count.update(temp1)
+      Any_other_type_anion_count.update(temp1)
+
+    temp1_debug=0
+    for i in config.id:
+      B=atom_type_num2sym[config.type[i]]
+      if B in given_anions_sym2num.keys(): # i = B = anion
+        temp1_debug = temp1_debug +1
+        temp1_4Coord_former     = []
+        temp1_non4Coord_former  = []
+        temp1_modifier          = []
+        temp3_4Coord_former     = {i:[]}
+        temp3_non4Coord_former  = {i:[]}
+        temp3_modifier          = {i:[]}
+        temp4_4Coord_former     = 0
+        temp4_non4Coord_former  = 0
+        temp4_modifier          = 0
+        for j in config_nnl.nnl[i]: # j = neighbouring cations [23,48,88,24]
+          if config.type[j] in given_formers_sym2num.values():
+            if config_nnl.nnl_count[j] == 4:
+              temp1_4Coord_former.append(j)
+              temp2_4Coord_former={i:temp1_4Coord_former}
+              temp3_4Coord_former.update(temp2_4Coord_former)
+              temp4_4Coord_former=temp4_4Coord_former+1
+            else :
+              temp1_non4Coord_former.append(j)
+              temp2_non4Coord_former={i:temp1_non4Coord_former}
+              temp3_non4Coord_former.update(temp2_non4Coord_former)
+              temp4_non4Coord_former=temp4_non4Coord_former+1
+          else:
+            temp1_modifier.append(j)
+            temp2_modifier={i:temp1_modifier}
+            temp3_modifier.update(temp2_modifier)
+            temp4_modifier=temp4_modifier+1
+
+        if temp4_4Coord_former == 2 and temp4_non4Coord_former == 0:
+          BA_4Coord_former.update(temp3_4Coord_former)
+          temp1={B:BA_4Coord_former_anion_count[B]+1}
+          BA_4Coord_former_anion_count.update(temp1)
+        elif temp4_4Coord_former + temp4_non4Coord_former == 2:
+          temp5=[]
+          temp6=temp3_4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6=temp3_non4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6={i:temp5}
+          BA_non4Coord_former.update(temp6)
+          temp1={B:BA_non4Coord_former_anion_count[B]+1}
+          BA_non4Coord_former_anion_count.update(temp1)
+        elif temp4_4Coord_former + temp4_non4Coord_former == 3:
+          temp5=[]
+          temp6=temp3_4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6=temp3_non4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6={i:temp5}
+          tri_cluster_former.update(temp6)
+          temp1={B:tri_cluster_former_anion_count[B]+1}
+          tri_cluster_former_anion_count.update(temp1)
+        elif temp4_4Coord_former + temp4_non4Coord_former == 1:
+          temp5=[]
+          temp6=temp3_4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6=temp3_non4Coord_former[i]
+          for j in temp6:
+            temp5.append(j)
+          temp6={i:temp5}
+          NBA_former.update(temp6)
+          temp1={B:NBA_former_anion_count[B]+1}
+          NBA_former_anion_count.update(temp1)
+        elif temp4_4Coord_former + temp4_non4Coord_former == 0:
+          temp6={i:i}
+          anions_connected_to_no_former.update(temp6)
+          temp1={B:anions_connected_to_no_former_count[B]+1}
+          anions_connected_to_no_former_count.update(temp1)
+        else :
+          temp6={i:i}
+          Any_other_type_anion.update(temp6)
+          temp1={B:Any_other_type_anion_count[B]+1}
+          Any_other_type_anion_count.update(temp1)
+
+        # the following loop is to compute triplets i.e Si[4]-O-Al[4], Si[4]-O-Al[5], etc.
+        # Do not include triclusters
+        if temp4_4Coord_former + temp4_non4Coord_former != 3:
+          for j in list(itertools.combinations(config_nnl.nnl[i], 2)):  # j=all combinations of (A and C) in A-B-C
+            A = atom_type_num2sym[config.type[j[0]]]
+            C = atom_type_num2sym[config.type[j[1]]]
+            if A in given_formers_sym2num.keys() and C in given_formers_sym2num.keys():
+              m = config_nnl.nnl_count[j[0]]
+              n = config_nnl.nnl_count[j[1]]
+              #temp_bonds_count = {A: bonds_count[A] + 1}
+              #bonds_count.update(temp_bonds_count)
+              #temp_bonds_count = {C: bonds_count[C] + 1}
+              #bonds_count.update(temp_bonds_count)
+              if A == C and m == n:
+                temp_triplets_count = {(A, m, B, C, n): triplets_count[(A, m, B, C, n)] + 1}
+                triplets_count.update(temp_triplets_count)
+              else:
+                temp_triplets_count = {(A, m, B, C, n): triplets_count[(A, m, B, C, n)] + 1}
+                triplets_count.update(temp_triplets_count)
+                temp_triplets_count = {(C, n, B, A, m): triplets_count[(C, n, B, A, m)] + 1}
+                triplets_count.update(temp_triplets_count)
+              #total_triplets = total_triplets + 1
+
+    self.BA_4CoordFormer_id2list                      = BA_4Coord_former
+    self.BA_non4CoordFormer_id2list                   = BA_non4Coord_former
+    self.modifiers_id2list                            = temp3_modifier
+    self.tri_cluster_former_id2list                   = tri_cluster_former
+    self.NBA_former_id2list                           = NBA_former
+    self.anions_with_zero_formers_id2list             = anions_connected_to_no_former
+    self.anions_of_any_other_type_id2list             = Any_other_type_anion
+
+    self.total_anions_of_BA_4CoordFormer_sym2count    = BA_4Coord_former_anion_count
+    self.total_anions_of_BA_non4CoordFormer_sym2count = BA_non4Coord_former_anion_count
+    self.total_anions_of_tri_clusters_sym2count       = tri_cluster_former_anion_count
+    self.total_anions_of_NBA_former_sym2count         = NBA_former_anion_count
+    self.total_anions_with_zero_formers_sym2count     = anions_connected_to_no_former_count
+    self.total_anions_of_any_other_type_sym2count     = Any_other_type_anion_count
+
+    self.triplets_AmBCn2count                         = triplets_count
