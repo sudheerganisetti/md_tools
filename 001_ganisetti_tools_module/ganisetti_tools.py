@@ -1377,3 +1377,66 @@ class compute_triplets:
     self.triplets_AmBCn2count=triplets_count
     self.total_triplets_sym2count=total_triplets
 
+
+class compute_ion_distribution:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Computing given ion distribution among the given atoms
+  *
+  * usage: config1_O_dist_among_formers=ganisetti_tools.compute_ion_distribution(cmd,config,config_nnl,O,given_formers_list)
+  *
+  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
+  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
+  *
+  * output: config1_triplets.triplets_AmBCn2count = {(A,m,B,C,n):count, etc.} # A-B-C
+  *         config1_triplets.total_triplets_sym2count= {O:100,Si:120,etc.} O, Si are cetral atoms
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self, cmd, config, config_nnl,central_ion_sym,terminal_ions_sym_list):
+    self.triplets_AmBCn2count={}
+    self.bonds_in_triplets_sym2count={}
+    atom_type_num2sym = cmd.atom_type_num2sym
+
+    bonds_count={}
+    for A in terminal_ions_sym_list:
+      temp_bonds_count={A:0}
+      bonds_count.update(temp_bonds_count)
+
+    triplets_count={}
+    for A in terminal_ions_sym_list:
+      for m in range(config_nnl.max_nnl_each_atom_type_sym[A] + 1):
+        for C in terminal_ions_sym_list:
+          for n in range(config_nnl.max_nnl_each_atom_type_sym[C] + 1):
+            temp_triplets_count={(A,m,central_ion_sym,C,n):0}
+            triplets_count.update(temp_triplets_count)
+
+    total_triplets=0
+    for i in config.id:
+      B=atom_type_num2sym[config.type[i]]
+      if  B == central_ion_sym:
+        # counting the triplets in which B is at the centre while A and C are at the two terminals i.e, A-B-C
+        if config_nnl.nnl_count[i] > 1:
+          for j in list( itertools.combinations(config_nnl.nnl[i], 2) ): # j=all combinations of (A and C) in A-B-C
+            A = atom_type_num2sym[config.type[j[0]]]
+            C = atom_type_num2sym[config.type[j[1]]]
+            if A in terminal_ions_sym_list and C in terminal_ions_sym_list:
+              m = config_nnl.nnl_count[j[0]]
+              n = config_nnl.nnl_count[j[1]]
+              temp_bonds_count = {A: bonds_count[A] + 1}
+              bonds_count.update(temp_bonds_count)
+              temp_bonds_count = {C: bonds_count[C] + 1}
+              bonds_count.update(temp_bonds_count)
+              if A == B and m == n:
+                temp_triplets_count = {(A, m, B, C, n): triplets_count[(A, m, B, C, n)] + 1}
+                triplets_count.update(temp_triplets_count)
+              else :
+                temp_triplets_count = {(A, m, B, C, n): triplets_count[(A, m, B, C, n)] + 1}
+                triplets_count.update(temp_triplets_count)
+                temp_triplets_count = {(C, n, B, A, m): triplets_count[(C, n, B, A, m)] + 1}
+                triplets_count.update(temp_triplets_count)
+              total_triplets=total_triplets+1
+
+      self.bonds_in_triplets_sym2count  = bonds_count
+      self.triplets_AmBCn2count         = triplets_count
+      self.total_triplets               = total_triplets

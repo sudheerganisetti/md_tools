@@ -173,3 +173,18 @@ if __name__=="__main__":
                 output1.write("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
                 #print("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
 
+  # **************************************************************************************
+  # compute  ions distribution
+  sum1=0
+  terminal_ions_sym_list=list(given_formers_sym2num.keys())
+  config1_O_distribution_among_formers = ganisetti_tools.compute_ion_distribution(cmd, config1, config1_nnl,"O",list(given_formers_sym2num.keys()))
+  for A in terminal_ions_sym_list:
+    for m in range(config1_nnl.max_nnl_each_atom_type_sym[A] + 1):
+      for C in terminal_ions_sym_list:
+        for n in range(config1_nnl.max_nnl_each_atom_type_sym[C] + 1):
+          temp1=config1_O_distribution_among_formers.triplets_AmBCn2count[(A,m,"O",C,n)]
+          if temp1 != 0:
+            temp2=temp1*100.0/config1_O_distribution_among_formers.total_triplets
+            print("%s %d - O - %s %d\t=  %4d\t\t%.2lf " %(A,m,C,n,temp1,temp2))
+            sum1=sum1+temp1
+  print("total_o_atoms = %d ; sum of above triplets = %d" %(total_atoms_of_type_sym["O"],sum1))
