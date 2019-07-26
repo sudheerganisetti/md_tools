@@ -195,29 +195,62 @@ if __name__=="__main__":
   # **************************************************************************************
   # compute  anions distribution
   config1_anions_distribution=ganisetti_tools.compute_anions_distribution(cmd, config1, config1_nnl)
+  output1=open(BASE_FILE+str("_BA_NBA_info1.data"),'w')
+  output1.write("# Bridging and Non-Bridging Aninons distribution among the network formers\n")
 
-  print("total BA              = %d" %(config1_anions_distribution.total_anions_of_BA_4CoordFormer_sym2count['O']))
-  print("total NBA             = %d" %(config1_anions_distribution.total_anions_of_NBA_former_sym2count['O']+config1_anions_distribution.total_anions_of_BA_non4CoordFormer_sym2count['O']))
-  print("total triclusters     = %d" %(config1_anions_distribution.total_anions_of_tri_clusters_sym2count['O']))
-  print("anions with zero NF   = %d" %(config1_anions_distribution.total_anions_with_zero_formers_sym2count['O']))
-  print("any other type anions = %d" %(config1_anions_distribution.total_anions_of_any_other_type_sym2count['O']))
-  set_a={}
-  set_c={}
-  count=0
-  for i in given_formers_sym2num.keys():
-    temp1={count:i}
-    set_a.update(temp1)
-    set_c.update(temp1)
-    count=count+1
-  for B in given_anions_sym2num.keys():
+  NBA_count = {}
+  for i in given_anions_sym2num.keys():
+    for j in given_formers_sym2num.keys():
+      temp1 = {(i, j): 0}
+      NBA_count.update(temp1)
+  for i in config1_anions_distribution.NBA_former_id2list.keys():
+    i_type = atom_type_num2sym[config1.type[i]]
+    j = config1_anions_distribution.NBA_former_id2list[i]
+    for k in j:
+      k_type = atom_type_num2sym[config1.type[k]]
+      temp1 = {(i_type, k_type): NBA_count[(i_type, k_type)] + 1}
+      NBA_count.update(temp1)
+
+
+  for k in given_anions_sym2num.keys():
+    output1.write("#########################\n")
+    output1.write("# Anion %s distribution \n" %(k))
+    output1.write("#########################\n")
+    output1.write("total %s               = %d\n" %(k,total_atoms_of_type_sym[k]))
+    output1.write("total BA              = %d\n" %(config1_anions_distribution.total_anions_of_BA_4CoordFormer_sym2count[k]))
+    output1.write("total NBA             = %d\n" %(config1_anions_distribution.total_anions_of_NBA_former_sym2count[k]+config1_anions_distribution.total_anions_of_BA_non4CoordFormer_sym2count[k]))
+    output1.write("total triclusters     = %d\n" %(config1_anions_distribution.total_anions_of_tri_clusters_sym2count[k]))
+    output1.write("anions with zero NF   = %d\n" %(config1_anions_distribution.total_anions_with_zero_formers_sym2count[k]))
+    output1.write("any other type anions = %d\n" %(config1_anions_distribution.total_anions_of_any_other_type_sym2count[k]))
+    output1.write("\n# Oxygen distribution in triplets \n")
+    set_a={}
+    set_c={}
+    count=0
+    for i in given_formers_sym2num.keys():
+      temp1={count:i}
+      set_a.update(temp1)
+      set_c.update(temp1)
+      count=count+1
+    go_to_next_line = "no"
     for i in range(count):
       A=set_a[i]
       for j in range(i,count):
         C=set_c[j]
         for m in range(config1_nnl.max_nnl_each_atom_type_sym[A] + 1):
           for n in range(config1_nnl.max_nnl_each_atom_type_sym[C] + 1):
-            temp1=config1_anions_distribution.triplets_AmBCn2count[(A,m,"O",C,n)]
+            temp1=config1_anions_distribution.triplets_AmBCn2count[(A,m,k,C,n)]
             if temp1 != 0:
-              print("%s %d %s %s %d   = %d " %(A,m,B,C,n,temp1))
-        print("\n")
-      print("\n")
+              output1.write("%s %d %s %s %d   = %d \n" %(A,m,k,C,n,temp1))
+              go_to_next_line="yes"
+        if go_to_next_line == "yes":
+          output1.write("\n")
+          go_to_next_line="no"
+      if go_to_next_line == "yes":
+        output1.write("\n")
+        go_to_next_line = "no"
+
+    output1.write("\n# Non-bridging anions distribution\n")
+    for j in given_formers_sym2num.keys():
+      if NBA_count[(k,j)] != 0:
+        output1.write("%s - %s %d\n" %(j,k,NBA_count[(k,j)]))
+    output1.write("\n\n")
