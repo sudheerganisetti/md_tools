@@ -418,7 +418,7 @@ class compute_each_atom_environment:
   * This class helps to compute the environment of each atom
   * and store the data into an object
   *
-  * usage: environment1=ganisetti_tools.compute_each_atom_environment(config,config_nnl,atom_type_sym2num,atom_type_num2sym)
+  * usage: efg_env=ganisetti_tools.compute_each_atom_environment(config,config_nnl,atom_type_sym2num,atom_type_num2sym)
   * where config                = ganisetti_tools.get_atoms_info_from_lammps(01.dump)
   *       config_nnl            = ganisetti_tools.compute_nnl(config,rc,atom_type_num2sym)
   *       atom_type_sym2num     = {"O":"1", "Si":"2", "Al":"3", etc,.}
@@ -427,7 +427,8 @@ class compute_each_atom_environment:
   * output: deprecated => config1.environment_atomnum2sym[0] = {'O':0,'Si':2,'Al':1}
   *         deprecated => config1.env_atomnum2nnlsymandcoord[0] = (('Si',4),('Al',4))
   *         deprecated => config1.env_atomnum2countofnnlsymandcoord[0] = (1,1)
-  *         config1.env_atomid[0]={('Si',4):1,('Al',4):1}  # which means Si[4]-O-Al[4]
+  *         cfg_env.env_atomid[0]={('Si',4):1,('Al',4):1}  # which means Si[4]-O-Al[4]
+  *         cfg_env.all_possible_local_env_and_counts={(O,(Si,2),(Al,2)):154} # the number of O which has 2Si+2Al = 154
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -446,6 +447,8 @@ class compute_each_atom_environment:
     #      temp_each_atom_type_count.update(temp1)
     #  self.env_atomnum2sym[i] = temp_each_atom_type_count
     self.env_atomid={}
+    self.all_possible_local_env_and_counts ={}
+
     for i in config.id:
       temp_local_env = {}
       for j in config_nnl.nnl[i]:
@@ -459,6 +462,25 @@ class compute_each_atom_environment:
       #self.env_atomnum2nnlsymandcoord[i] = tuple(temp_local_env.keys())
       #self.env_atomnum2countofnnlsymandcoord[i] = tuple(temp_local_env.values())
       self.env_atomid[i]=temp_local_env
+
+    local_env_count = {}
+    # Since creating a complete matrix to store the environment count is very memory expensive
+    # only the necessary elements of the matrix is created
+    # for this we need to run the loop two times, first time to initilized it and second time for counting it
+    for i in config.id:
+      local_env = [atom_type_num2sym[config.type[i]]]
+      for j in atom_type_sym2num.keys():
+        local_env.append((j, list(config_nnl.nnl_type_sym[i]).count(j)))
+      temp1 = {tuple(local_env): 0}
+      local_env_count.update(temp1)
+
+    for i in config.id:
+      local_env = [atom_type_num2sym[config.type[i]]]
+      for j in atom_type_sym2num.keys():
+        local_env.append((j, list(config_nnl.nnl_type_sym[i]).count(j)))
+      temp1 = {tuple(local_env): local_env_count[tuple(local_env)] + 1}
+      local_env_count.update(temp1)
+    self.all_possible_local_env_and_counts=local_env_count
 
 class compute_coordination:
   """
@@ -475,37 +497,54 @@ class compute_coordination:
   * output: config1.avg_coord_sym  # config1.avg_coord_sym['Si'] = 4
   *         config1.avg_coord_num  # config1.avg_coord_num[atom_type_sym2num['Si']] = 4
   *         config1.individual_coord_sym # config1.individual_coord_sym[('Si',4)] = 100 atoms
+  *         config1.avg_coord_of_each_type={(Si,O):3.0,(Si,F):1.0} total_coord of Si =4 of which O is 3 and F is 1
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,config,config_nnl,atom_type_num2sym):
     self.avg_coord_num          = {}
     self.avg_coord_sym          = {}
-    temp1_count                 = {}
-    temp2_count                 = {}
+    self.avg_coord_of_each_type = {}
     atoms_count                 = {}
     total_coord                 = {}
     nnl_individual_coord_count  = {}
+    avg_coord_of_each_type      = {}
     for i in atom_type_num2sym.keys():
+      i_sym = atom_type_num2sym[i]
       temp1_count={i:0}
       atoms_count.update(temp1_count)
       total_coord.update(temp1_count)
       for j in range(config_nnl.max_nnl_each_atom_type_sym[atom_type_num2sym[i]]+1):
         temp2_count={(atom_type_num2sym[i],j):0}
         nnl_individual_coord_count.update(temp2_count)
+      for j_sym in atom_type_num2sym.values():
+        temp_avg_coord_of_each_type={(i_sym,j_sym):0}
+        avg_coord_of_each_type.update(temp_avg_coord_of_each_type)
 
+    # Main loop
     for i in config.id:
       temp1_count={config.type[i]:atoms_count[config.type[i]]+1}
       atoms_count.update(temp1_count)
       temp2_count={config.type[i]:total_coord[config.type[i]]+config_nnl.nnl_count[i]}
       total_coord.update(temp2_count)
-      temp3=atom_type_num2sym[config.type[i]]
-      temp4_count={(temp3,config_nnl.nnl_count[i]):nnl_individual_coord_count[(temp3,config_nnl.nnl_count[i])]+1}
+      i_sym=atom_type_num2sym[config.type[i]]
+      temp4_count={(i_sym,config_nnl.nnl_count[i]):nnl_individual_coord_count[(i_sym,config_nnl.nnl_count[i])]+1}
       nnl_individual_coord_count.update(temp4_count)
+      for j in config_nnl.nnl[i]:
+        j_sym=atom_type_num2sym[config.type[j]]
+        temp_avg_coord_of_each_type={(i_sym,j_sym):avg_coord_of_each_type[(i_sym,j_sym)]+1}
+        avg_coord_of_each_type.update(temp_avg_coord_of_each_type)
+
     for i in atom_type_num2sym.keys():
       self.avg_coord_num[i]=float(total_coord[i]/atoms_count[i])
       self.avg_coord_sym[atom_type_num2sym[i]]=float(total_coord[i]/atoms_count[i])
+      i_sym=atom_type_num2sym[i]
+      for j_sym in atom_type_num2sym.values():
+        temp_avg_coord_of_each_type={(i_sym,j_sym):float(avg_coord_of_each_type[(i_sym,j_sym)]/atoms_count[i])}
+        avg_coord_of_each_type.update(temp_avg_coord_of_each_type)
+
     self.individual_coord_sym=nnl_individual_coord_count
+    self.avg_coord_of_each_type=avg_coord_of_each_type
 
 
 class read_command_line_deprecated:
@@ -1186,7 +1225,7 @@ class compute_Q_deprecated:
         Q[BA_count]=Q[BA_count]+1
         '''
     self.Q=Q
-    self.Q_status_atomid2num
+    self.Q_status_atomid2num=Q_status_atomid2num
 
 class compute_Q:
   """
@@ -1275,53 +1314,7 @@ class compute_Q:
         temp1 = {(atom_type_num2sym[config.type[i]], BridgingAnions_count): NetworkFormersList_non4coord}
         Q_non4CoordFormers_list.update(temp1)
         self.Q_non4CoordFormers_list=Q_non4CoordFormers_list
-'''
-class compute_anions_distribution:
-  """
-  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-  * Computing anions speciation
-  *
-  * usage: config1_anions_dist=ganisetti_tools.compute_anions_distribution(cmd,config,config_nnl,config_env,'Si')
-  *
-  * input:  config1	= ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
-  *         cmd     = ganisetti_tools.read_command_line(sys.argv)
-  *
-  * output: config1_QSi.Q_summary = {(Si,0):10,(Si,1):22, etc.}
-  *         config1_QSi.Q_status_atomid2num = {0:-1,1;-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
-  *         config1_QSi.Q_4CoordFormers_list = {(Si,0):[1,2,3,etc.],(Si,1):[1,2,3,etc.]}
-  *         config1_QSi.Q_non4CoordFormers_list = {(Si,1):[1,2,3, etc],(Al,1)}
-  *
-  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-  """
-  def __init__(self, cmd, config, config_nnl, config_env):
-    self.Q_status_atomid2num      = {}
-    self.Q_summary                = {}
-    self.Q_4CoordFormers_list     = {}
-    self.Q_non4CoordFormers_list  = {}
-    atom_type_sym2num = cmd.atom_type_sym2num
-    atom_type_num2sym = cmd.atom_type_num2sym
-    given_anions_sym2num = cmd.given_anions_sym2num
-    given_cations_sym2num = cmd.given_cations_sym2num
-    given_formers_sym2num = cmd.given_formers_sym2num
-    given_modifiers_sym2num = cmd.given_modifiers_sym2num
 
-    bonds_count={}
-    total_bonds_count={}
-    total_atom_types={}
-    total_atom_types.update(given_anions_sym2num)
-    total_atom_types.update(given_cations_sym2num)
-    for i in total_atom_types:
-      temp1={i:0}
-      total_bonds_count.update(temp1)
-
-    for i in config.id:
-      for j in config_nnl.nnl[i]:
-        temp1={atom_type_num2sym[config.type[j]]:bonds_count[atom_type_num2sym[config.type[j]]]+1}
-      if config.type[i] in given_anions_sym2num.values(): # i = anion
-        for j in config_nnl.nnl[i]: # j = neighbouring cations
-          temp1={atom_type_num2sym[config.type[j]]:bonds_count[atom_type_num2sym[config.type[j]]]+1}
-          bonds_count.update(temp1)
-'''
 class compute_triplets:
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

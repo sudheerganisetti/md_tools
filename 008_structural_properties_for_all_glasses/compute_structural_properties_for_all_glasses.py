@@ -106,6 +106,11 @@ if __name__=="__main__":
     for j in range(config1_nnl.max_nnl_each_atom_type_sym[i]+1):
       temp1=config1_coord.individual_coord_sym[(i,j)]
       output1.write("%d\t%d\t\t%.2lf\n" %(j,temp1,float(temp1*100.0/total_atoms_of_type_sym[i])))
+    output1.write("\n\n# Average coord = %.2lf\n" %(config1_coord.avg_coord_sym[i]))
+    output1.write("\n\n# Coordination of %s with each atom type\n" %(i))
+    for j in atom_type_sym2num.keys():
+      if config1_coord.avg_coord_of_each_type[(i,j)] != 0:
+        output1.write("%s   %.2lf\n" %(j,config1_coord.avg_coord_of_each_type[(i,j)]))
     output1.close()
   output1=open(BASE_FILE+str("_average_coord"),'w')
   output1.write("# AtomType_sym  AtomType_num   Number_of_Atoms AverageCoordination\n")
@@ -117,13 +122,24 @@ if __name__=="__main__":
   # **************************************************************************************
   # compute environment of each atom
   config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num,atom_type_num2sym)
-  '''
-  for i in config1.id:
-      for j in given_anions_sym2num.values():
-        if config1.type[i] == j:
-          for k in config1_env.env_atomid[i]:
-  '''
 
+  for i in given_anions_sym2num.keys():
+    output1=open(BASE_FILE+str("_")+str(i)+str("_local_env.data"),'w')
+    for j in config1_env.all_possible_local_env_and_counts.keys():
+      if j[0] == i:
+        temp1=0
+        temp2=[]
+        for k in j:
+          if temp1 > 0:
+            if k[1] != 0:
+              temp2.append(k)
+          else:
+            temp1=temp1+1
+        for k in temp2:
+          output1.write("%s " %(str(k)))
+        temp3=config1_env.all_possible_local_env_and_counts[j]
+        output1.write("%d\t%.2lf\n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+    output1.close()
 
   # **************************************************************************************
   # compute Q of each network former
