@@ -10,6 +10,13 @@
 import numpy as np
 import sys
 import itertools
+import datetime
+import git
+
+__author__  = "Sudheer Ganisetti"
+__version__ = "1.0"
+__email__   = "sudheerganisetti@gmail.com"
+__status__  = "under preparation..."
 
 #class banner:
 def sudheer_banner():
@@ -33,6 +40,33 @@ def sudheer_banner():
   print("    #                                                                                   # ")
   print("    #***********************************************************************************# ")
   print("\n\n")
+
+def get_ganisetti_tools_version():
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * The ganisetti_tools version is defined based on the git commit of ganisetti_tools
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  time_now              = datetime.datetime.now()
+  git_repo              = git.Repo("/data/ganisetti/TOOLS/github_repos/md_tools")
+  git_log               = git_repo.heads.master.log()
+  git_last_commit       = git_log[-1]
+  git_last_commit_time  = datetime.datetime.fromtimestamp(int(git_last_commit[3][0])).strftime("%a %B %d %Y %I:%M:%S")
+  git_commits_number    = len(git_log)
+
+  output1 = open("version_and_date_info.txt", 'w')
+  output1.write("Author : Sudheer Ganisetti\n")
+  output1.write("Date   : %s\n" % (time_now))
+  output1.write("command used:\n")
+  for i in sys.argv:
+    output1.write("%s  " % (str(i)))
+  output1.write("\n\ninformation of module ganisetti_tools\n")
+  output1.write("version number   : %d\n" %(git_commits_number))
+  output1.write("version time     : %s\n" %(str(git_last_commit_time)))
+  output1.write("version stamp    : %s\n" %(str(git_last_commit[1])))
+  output1.write("version last %s\n" %(git_last_commit[4]))
+  output1.close()
 
 
 class get_atoms_info_from_imd:

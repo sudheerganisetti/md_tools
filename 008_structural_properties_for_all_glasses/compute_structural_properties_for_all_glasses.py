@@ -6,11 +6,7 @@
 This code is to compute nnl, nnlchk,  connectivity(Qn) and A-O-A triplets for the sample (SiO2 + Al2O3 + P2O5 + Na2O + CaO + MgO + CaF2)
 """
 
-import numpy as np
 import sys
-import math as mt
-import itertools as it
-import datetime
 import ganisetti_tools
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -20,6 +16,26 @@ if __name__=="__main__":
   cmd=ganisetti_tools.read_command_line(sys.argv)
   if cmd.error != "none":
     sys.exit(0)
+  ganisetti_tools.get_ganisetti_tools_version()
+  '''
+  time_now=datetime.datetime.now()
+  git_repo=git.Repo("/data/ganisetti/TOOLS/github_repos/md_tools")
+  git_log=git_repo.heads.master.log()
+  print(git_log[69][3])
+  print(datetime.datetime.fromtimestamp(int(git_log[69][3][0])).strftime("%A,%B %d, %Y %I:%M:%S"))
+  print(git_log[68][3])
+  #for i in git_log:
+  #  print("%s \n" %(str(i)[-1]))
+  #print(str(git_repo.heads.master.log()))
+  output1=open("version_and_date_info.txt",'w')
+  output1.write("Author: Sudheer Ganisetti\n")
+  output1.write("%s\n" %(time_now))
+  output1.write("version of module ganisetti_tools = %s\n" %(ganisetti_tools.__version__))
+  output1.write("command used:\n")
+  for i in sys.argv:
+    output1.write("%s  " %(str(i)))
+  output1.close()
+  '''
   atom_type_sym2num    = cmd.atom_type_sym2num
   atom_type_num2sym    = cmd.atom_type_num2sym
   bond_length_sym2num  = cmd.bond_length_sys2num
@@ -125,6 +141,7 @@ if __name__=="__main__":
 
   for i in given_anions_sym2num.keys():
     output1=open(BASE_FILE+str("_")+str(i)+str("_local_env.data"),'w')
+    output1.write("# %s Environment \t\t\t Number ( Percentage )\n" %(str(i)))
     for j in config1_env.all_possible_local_env_and_counts.keys():
       if j[0] == i:
         temp1=0
@@ -138,7 +155,7 @@ if __name__=="__main__":
         for k in temp2:
           output1.write("%s " %(str(k)))
         temp3=config1_env.all_possible_local_env_and_counts[j]
-        output1.write("%d\t%.2lf\n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+        output1.write("\t\t\t=> %d ( %.2lf )\n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
     output1.close()
 
   # **************************************************************************************
@@ -270,3 +287,8 @@ if __name__=="__main__":
       if NBA_count[(k,j)] != 0:
         output1.write("%s - %s %d\n" %(j,k,NBA_count[(k,j)]))
     output1.write("\n\n")
+
+  temp1=given_formers_sym2num.keys()
+
+  #if "Na"  in temp1 and "Al" in temp1 and "P" in temp1 and "Si" in temp1:
+  #  print(given_formers_sym2num.keys())
