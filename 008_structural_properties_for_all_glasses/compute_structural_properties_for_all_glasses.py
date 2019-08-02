@@ -16,26 +16,9 @@ if __name__=="__main__":
   cmd=ganisetti_tools.read_command_line(sys.argv)
   if cmd.error != "none":
     sys.exit(0)
+  # get the version details
   ganisetti_tools.get_ganisetti_tools_version()
-  '''
-  time_now=datetime.datetime.now()
-  git_repo=git.Repo("/data/ganisetti/TOOLS/github_repos/md_tools")
-  git_log=git_repo.heads.master.log()
-  print(git_log[69][3])
-  print(datetime.datetime.fromtimestamp(int(git_log[69][3][0])).strftime("%A,%B %d, %Y %I:%M:%S"))
-  print(git_log[68][3])
-  #for i in git_log:
-  #  print("%s \n" %(str(i)[-1]))
-  #print(str(git_repo.heads.master.log()))
-  output1=open("version_and_date_info.txt",'w')
-  output1.write("Author: Sudheer Ganisetti\n")
-  output1.write("%s\n" %(time_now))
-  output1.write("version of module ganisetti_tools = %s\n" %(ganisetti_tools.__version__))
-  output1.write("command used:\n")
-  for i in sys.argv:
-    output1.write("%s  " %(str(i)))
-  output1.close()
-  '''
+
   atom_type_sym2num    = cmd.atom_type_sym2num
   atom_type_num2sym    = cmd.atom_type_num2sym
   bond_length_sym2num  = cmd.bond_length_sys2num
@@ -81,25 +64,32 @@ if __name__=="__main__":
     for j in config1_nnl.nnl[i]:
       output_nnl.write("%d\t" %(j))
     output_nnl.write("\n")
+  # config1_nnl.nnl = {0:[1,2,3,4]}
+  # config1_nnl.nnl_count = {0:4}
+  # config1_nnl.nnl_type_num = {0:[1,1,1,1]}
+  # config1_nnl.nnl_type_sym = {0:[Si,Si,Si,Si]}
+  # config1_nnl.nnl_each_pair_distance={0:[1.58,1.62,1.59,1.60]}
+  # config1_nnl.max_nnl_each_atom_type_sym={O:4,Si:4,Al:6,Ca:8}
 
   # **************************************************************************************
   # writing out chkpt with nnl status
-  output_nnl_imd=open(BASE_FILE+str("_withnnlstatus.atoms"),'w')
-  ganisetti_tools.write_imd_header(output_nnl_imd,config1.box,rc,atom_type_sym2num)
+  output1=open(BASE_FILE+str("_withnnlstatus.atoms"),'w')
+  ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
   for i in config1.id:
     #output_nnl_imd.write("%d  %d  %lf  %lf  %lf %d \n" %(i,config1.type[i],config1.posx[i],config1.posy[i],config1.posz[i],config1_nnl.nnl_count[i]))
-    ganisetti_tools.write_imd_atom(output_nnl_imd,i,config1,config1_nnl)
-  output_nnl_imd.close()
+    ganisetti_tools.write_imd_atom(output1,i,config1,config1_nnl)
+  output1.close()
 
   # **************************************************************************************
   # writing out individual cations and their anions
   for i in atom_type_sym2num.keys():
-    if i != "O":
-      output=open(BASE_FILE+str("_")+str(i)+str("-O.atoms"),'w')
-      ganisetti_tools.write_imd_header(output,config1.box,rc,atom_type_sym2num)
+    if i not in given_anions_sym2num.keys():
+      output1=open(BASE_FILE+str("_")+str(i)+str("-anions.atoms"),'w')
+      ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
       SelectAtoms1={}
       for j in config1.id:
-        SelectAtoms1[j]=0
+        tmp={j:0}
+        SelectAtoms1.update(tmp)
       for j in config1.id:
         if i == atom_type_num2sym[config1.type[j]]:
           tmp={j:1}
@@ -109,8 +99,8 @@ if __name__=="__main__":
             SelectAtoms1.update(tmp)
       for j in config1.id:
         if SelectAtoms1[j] == 1:
-          ganisetti_tools.write_imd_atom(output,j,config1,config1_nnl)
-      output.close()
+          ganisetti_tools.write_imd_atom(output1,j,config1,config1_nnl)
+      output1.close()
 
 
   # **************************************************************************************
@@ -133,7 +123,10 @@ if __name__=="__main__":
   for i in atom_type_sym2num.keys():
     output1.write("%s\t%d\t%d\t%.2lf\n" %(i,atom_type_sym2num[i],total_atoms_of_type_sym[i],config1_coord.avg_coord_sym[i]))
   output1.close()
-
+  # config1_coord.avg_coord_sym={Si:4,Al:4.13,P:4}
+  # config1_coord.avg_coord_num={2:4.0,3:4.13,4:4.0}
+  # config1_coord.avg_coord_of_each_type={(Si,O):4,(P,O):4}
+  # config1_coord.individual_coord_sym={(Si,4):200,(Al,4):150,(Al,5):10}
 
   # **************************************************************************************
   # compute environment of each atom
@@ -157,6 +150,8 @@ if __name__=="__main__":
         temp3=config1_env.all_possible_local_env_and_counts[j]
         output1.write("\t\t\t=> %d ( %.2lf )\n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
     output1.close()
+  #config1_env.all_possible_local_env_and_counts={(O,(Si,1),(Al,1)):154} # total O which is in Si-O-Al are 154
+  #config1_env.env_atomid[0]={('Si',4):1,('Al',4):1}
 
   # **************************************************************************************
   # compute Q of each network former
@@ -171,7 +166,6 @@ if __name__=="__main__":
       output1.write("%d %d\t%.2lf \n" %(j,config1_Q.Q[j],config1_Q.Q[j]*100.0/total_atoms_of_type_sym[i]))
     output1.close()
   '''
-
   config1_Q=ganisetti_tools.compute_Q(cmd,config1,config1_nnl,config1_env)
   for i in given_formers_sym2num.keys():
     output1=open(BASE_FILE+str("_Q")+str(i)+str(".data"),'w')
@@ -184,12 +178,14 @@ if __name__=="__main__":
   #for i in config1.id:
   #  if config1.type[i] in given_formers_sym2num.values():
   #    print(config1.type[i],config1_Q.Q_status_atomid2num[i])
+  #config1_Q.Q_summary={(Si,1):10,(Si,2):20,(Si,3):100,(Si,4):150} # For Si: Q1=10, Q2=20, Q3=100, Q4=150
+  #config1_Q.Q_status_atomid2num={20:2,21:-1,22:1} # atom20:type=Si,BridgingAnions=2;atom21:type=O
+  #config1_Q.Q_4CoordFormers_list={(Si,1):1,2,3,4} # list of Si with Q1=1,2,3,4
+  #config1_Q.Q_non4CoordFormers_list={(Si,1):55,83} # list of Si with Q1 but one of the other Si is having non 4 coord = 55, 83
 
   # **************************************************************************************
   # compute triplets
   config1_triplets=ganisetti_tools.compute_triplets(cmd,config1,config1_nnl)
-  #for i in atom_type_sym2num.keys():
-  #  print(i,config1_triplets.total_triplets_sym2count[i])
 
   output1=open(BASE_FILE+str("_triplets.data"),'w')
   output1.write("# Triplets based on anions\n")
@@ -205,6 +201,8 @@ if __name__=="__main__":
               if temp2 != 0:
                 output1.write("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
                 #print("%s %d - %s - %s %d\t = %d\t  %.2lf\n" %(j,m,i,k,n,temp2,temp2*100.0/temp1))
+  #config1_triplets.triplets_AmBCn2count={(Si,4,O,Si,4):150} # Si4-O-Si4 = 150 triplets
+  #config1_triplets.total_triplets_sym2count=total triplets
 
   # **************************************************************************************
   # compute  ions distribution

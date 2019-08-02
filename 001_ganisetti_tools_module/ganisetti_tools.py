@@ -14,7 +14,7 @@ import datetime
 import git
 
 __author__  = "Sudheer Ganisetti"
-__version__ = "1.0"
+__version__ = "71"
 __email__   = "sudheerganisetti@gmail.com"
 __status__  = "under preparation..."
 
@@ -515,6 +515,8 @@ class compute_each_atom_environment:
       temp1 = {tuple(local_env): local_env_count[tuple(local_env)] + 1}
       local_env_count.update(temp1)
     self.all_possible_local_env_and_counts=local_env_count
+    # In the future, I would like to rewrite this as follows
+    # all_possible_local_env_and_counts_new={O:{((Si,1),(Al,1)):50,((Si,1),(Al,1),(Na,1)):200}}
 
 class compute_coordination:
   """
@@ -1272,7 +1274,7 @@ class compute_Q:
   *         cmd     = ganisetti_tools.read_command_line(sys.argv)
   *
   * output: config1_QSi.Q_summary = {(Si,0):10,(Si,1):22, etc.}
-  *         config1_QSi.Q_status_atomid2num = {0:-1,1;-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
+  *         config1_QSi.Q_status_atomid2num = {0:-1,1:-1,2:1,3:-1} 0,1,3 are other atom tpyes, 2 is requred type
   *         config1_QSi.Q_4CoordFormers_list = {(Si,0):[1,2,3,etc.],(Si,1):[1,2,3,etc.]}
   *         config1_QSi.Q_non4CoordFormers_list = {(Si,1):[1,2,3, etc],(Al,1)}
   *
@@ -1322,7 +1324,7 @@ class compute_Q:
                 NetworkFormersList_4coord.append(k)   # This is for Si[4]-O-Si[4], Si[4]-O-Al[4], etc
               else :
                 Anion_non4CoordinatedNetworkFormers_count=Anion_non4CoordinatedNetworkFormers_count+1
-                NetworkFormersList_non4coord.append(k) # This is for Si[4]-O-Si[4], Si[4]-O-Al[5], etc
+                NetworkFormersList_non4coord.append(k) # This is for Si[4]-O-Si[5], Si[4]-O-Al[5], etc
           if Anion_4CoordinatedNetworkFormers_count == 2:
             BridgingAnions_count            = BridgingAnions_count+1
           elif Anion_4CoordinatedNetworkFormers_count == 1:
@@ -1331,23 +1333,24 @@ class compute_Q:
             Triplet_NonBridgingAnions_count = Triplet_NonBridgingAnions_count+1
         temp1={(atom_type_num2sym[config.type[i]],BridgingAnions_count):Q_summary[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]+1}
         Q_summary.update(temp1)
-        self.Q_summary=Q_summary
 
         temp1={i:BridgingAnions_count}
         Q_status_atomid2num.update(temp1)
-        self.Q_status_atomid2num=Q_status_atomid2num
 
-        NetworkFormersList_4coord=NetworkFormersList_4coord+Q_4CoordFormers_list[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]
+        NetworkFormersList_4coord=NetworkFormersList_4coord + Q_4CoordFormers_list[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]
         NetworkFormersList_4coord=list(dict.fromkeys(NetworkFormersList_4coord))
         temp1 = {(atom_type_num2sym[config.type[i]],BridgingAnions_count):NetworkFormersList_4coord}
         Q_4CoordFormers_list.update(temp1)
-        self.Q_4CoordFormers_list=Q_4CoordFormers_list
 
         NetworkFormersList_non4coord = NetworkFormersList_non4coord + Q_non4CoordFormers_list[(atom_type_num2sym[config.type[i]],BridgingAnions_count)]
         NetworkFormersList_non4coord = list(dict.fromkeys(NetworkFormersList_non4coord))
         temp1 = {(atom_type_num2sym[config.type[i]], BridgingAnions_count): NetworkFormersList_non4coord}
         Q_non4CoordFormers_list.update(temp1)
-        self.Q_non4CoordFormers_list=Q_non4CoordFormers_list
+
+    self.Q_summary = Q_summary
+    self.Q_status_atomid2num=Q_status_atomid2num
+    self.Q_4CoordFormers_list = Q_4CoordFormers_list
+    self.Q_non4CoordFormers_list=Q_non4CoordFormers_list
 
 class compute_triplets:
   """
