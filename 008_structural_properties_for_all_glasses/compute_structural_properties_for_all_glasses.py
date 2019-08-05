@@ -401,3 +401,26 @@ if __name__=="__main__":
           temp1=QmSinAl[i][j][k]
           if temp1 != 0:
             output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["Si"]))
+
+    output1=open(BASE_FILE+str("_Q")+str("P.data"),'a+')
+    output1.write("\n\n")
+    output1.write("# Q Discretization\n")
+    output1.write("# total_network_cations\tnum_of_Al\tnum_of_Si\t num_of_units\t %_of_units\n")
+    temp_Q=[[[0 for i in range(5)] for j in range(5)] for k in range(5)]
+    for i in config1.id:
+      if atom_type_num2sym[config1.type[i]] == "P" and config1_nnl.nnl_count[i] == 4:
+        Q_count=config1_Q.Q_status_atomid2num[i]
+        Al_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Al"])
+        if "Si" in given_formers_sym2num.keys():
+          Si_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Si"])
+        else:
+          Si_count=0
+        if Al_count < 5 and Si_count < 5:
+          temp_Q[Q_count][Al_count][Si_count]=temp_Q[Q_count][Al_count][Si_count]+1
+    for i in range(5):
+      for j in range(5):
+        for k in range(5):
+          temp1=temp_Q[i][j][k]
+          if temp1 != 0:
+            output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["P"]))
+
