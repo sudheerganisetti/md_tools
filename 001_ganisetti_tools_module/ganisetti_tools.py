@@ -1281,10 +1281,12 @@ class compute_Q:
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self, cmd, config, config_nnl, config_env):
-    self.Q_status_atomid2num      = {}
-    self.Q_summary                = {}
-    self.Q_4CoordFormers_list     = {}
-    self.Q_non4CoordFormers_list  = {}
+    self.Q_status_atomid2num            = {}
+    self.Q_summary                      = {}
+    self.Q_4CoordFormers_list           = {}
+    self.Q_non4CoordFormers_list        = {}
+    self.Q_4CoordFormers_id2sym_list    = {}
+    self.Q_non4CoordFormers_id2sym_list = {}
     atom_type_sym2num = cmd.atom_type_sym2num
     atom_type_num2sym = cmd.atom_type_num2sym
     given_anions_sym2num = cmd.given_anions_sym2num
@@ -1314,17 +1316,23 @@ class compute_Q:
         Triplet_NonBridgingAnions_count = 0   # for atom i
         NetworkFormersList_4coord       = []  # for atom i
         NetworkFormersList_non4coord    = []  # for atom i
+        NetworkFormersList_4coord_sym   = []  # for atom i
+        NetworkFormersList_non4coord_sym= []  # for atom i
         for j in config_nnl.nnl[i]: # j = Q neighbouring anions: O1,O2,O3,O4
           Anion_4CoordinatedNetworkFormers_count    = 0 # for atom j
           Anion_non4CoordinatedNetworkFormers_count = 0 # for atom j
-          for k in config_nnl.nnl[j]: # k =Q neighboring cations Si,Si (including the Q cation)
+          for k in config_nnl.nnl[j]: # k = Q neighboring cations Si,Si (including the Q cation)
             if config.type[k] in given_formers_sym2num.values():
               if config_nnl.nnl_count[k] == 4:
                 Anion_4CoordinatedNetworkFormers_count=Anion_4CoordinatedNetworkFormers_count+1
                 NetworkFormersList_4coord.append(k)   # This is for Si[4]-O-Si[4], Si[4]-O-Al[4], etc
+                if k != i:
+                  NetworkFormersList_4coord_sym.append(config.type[k])
               else :
                 Anion_non4CoordinatedNetworkFormers_count=Anion_non4CoordinatedNetworkFormers_count+1
                 NetworkFormersList_non4coord.append(k) # This is for Si[4]-O-Si[5], Si[4]-O-Al[5], etc
+                if k != i:
+                  NetworkFormersList_non4coord_sym.append(config.type[k])
           if Anion_4CoordinatedNetworkFormers_count == 2:
             BridgingAnions_count            = BridgingAnions_count+1
           elif Anion_4CoordinatedNetworkFormers_count == 1:
@@ -1346,7 +1354,8 @@ class compute_Q:
         NetworkFormersList_non4coord = list(dict.fromkeys(NetworkFormersList_non4coord))
         temp1 = {(atom_type_num2sym[config.type[i]], BridgingAnions_count): NetworkFormersList_non4coord}
         Q_non4CoordFormers_list.update(temp1)
-
+        self.Q_4CoordFormers_id2sym_list[i]     = NetworkFormersList_4coord_sym
+        self.Q_non4CoordFormers_id2sym_list[i]  = NetworkFormersList_non4coord_sym
     self.Q_summary = Q_summary
     self.Q_status_atomid2num=Q_status_atomid2num
     self.Q_4CoordFormers_list = Q_4CoordFormers_list

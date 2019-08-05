@@ -29,11 +29,21 @@ if __name__=="__main__":
   given_formers_sym2num= cmd.given_formers_sym2num
   given_modifiers_sym2num = cmd.given_modifiers_sym2num
 
+  # controllers for some specific glasses
+  temp1=atom_type_sym2num.keys()
+  BG_glass="no"
+  if "Si" in temp1 and "P" in temp1 and "Na" in temp1 and "Ca" in temp1:
+    BG_glass="yes"
+  NAPS_glass="no"
+  if "P" in temp1 and "Al" in temp1 and "Na" in temp1:
+    NAPS_glass="yes"
+
   # main loop starts here
   BASE_FILE=str(sys.argv[1])
   LAMMPS_DUMP_FILE=BASE_FILE+str('.dump')
   MAX_NEIGHBOURS=8
   MAX_ATOM_TYPES=8
+
 
   # **************************************************************************************
   # get the atoms information
@@ -102,6 +112,43 @@ if __name__=="__main__":
           ganisetti_tools.write_imd_atom(output1,j,config1,config1_nnl)
       output1.close()
 
+  # for Bio Glass; SiO2 + P2O5 + Na2O + CaO
+  if BG_glass == "yes":
+    output1=open(BASE_FILE+str("_")+str("NaCa")+str("-anions.atoms"),'w')
+    ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
+    SelectAtoms1={}
+    for j in config1.id:
+      tmp={j:0}
+      SelectAtoms1.update(tmp)
+    for j in config1.id:
+      if atom_type_num2sym[config1.type[j]] == "Na" or atom_type_num2sym[config1.type[j]] == "Ca":
+        tmp={j:1}
+        SelectAtoms1.update(tmp)
+        for k in config1_nnl.nnl[j]:
+          tmp={k:1}
+          SelectAtoms1.update(tmp)
+    for j in config1.id:
+      if SelectAtoms1[j] == 1:
+        ganisetti_tools.write_imd_atom(output1,j,config1,config1_nnl)
+    output1.close()
+
+    output1=open(BASE_FILE+str("_")+str("F")+str("-cations.atoms"),'w')
+    ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
+    SelectAtoms1={}
+    for j in config1.id:
+      tmp={j:0}
+      SelectAtoms1.update(tmp)
+    for j in config1.id:
+      if atom_type_num2sym[config1.type[j]] == "F":
+        tmp={j:1}
+        SelectAtoms1.update(tmp)
+        for k in config1_nnl.nnl[j]:
+          tmp={k:1}
+          SelectAtoms1.update(tmp)
+    for j in config1.id:
+      if SelectAtoms1[j] == 1:
+        ganisetti_tools.write_imd_atom(output1,j,config1,config1_nnl)
+    output1.close()
 
   # **************************************************************************************
   # compute coordination of each atom and average atom type
@@ -242,7 +289,6 @@ if __name__=="__main__":
       temp1 = {(i_type, k_type): NBA_count[(i_type, k_type)] + 1}
       NBA_count.update(temp1)
 
-
   for k in given_anions_sym2num.keys():
     output1.write("#########################\n")
     output1.write("# Anion %s distribution \n" %(k))
@@ -286,7 +332,72 @@ if __name__=="__main__":
         output1.write("%s - %s %d\n" %(j,k,NBA_count[(k,j)]))
     output1.write("\n\n")
 
-  temp1=given_formers_sym2num.keys()
+  # for Bio-Glass; SiO2 + P2O5 + Na2O + CaO
+  if BG_glass == "yes":
+    Si_typ=atom_type_sym2num["Si"]
+    P_typ=atom_type_sym2num["P"]
+    SelectAtoms1={}
+    for i in config1.id:
+      if Si_typ in config1_nnl.nnl_type_num[i] and P_typ in config1_nnl.nnl_type_num[i]:
+        temp1={i:i}
+        SelectAtoms1.update(temp1)
+        for j in config1_nnl.nnl[i]:
+          if Si_typ == config1.type[j] or P_typ == config1.type[j]:
+            temp1={j:j}
+            SelectAtoms1.update(temp1)
+    output1=open(BASE_FILE+str("_SiOP.atoms"),'w')
+    ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
+    for i in SelectAtoms1.keys():
+      ganisetti_tools.write_imd_atom(output1,i,config1,config1_nnl)
+    output1.close()
 
-  #if "Na"  in temp1 and "Al" in temp1 and "P" in temp1 and "Si" in temp1:
-  #  print(given_formers_sym2num.keys())
+  # For NAPS glass
+  if NAPS_glass == "yes":
+    Na_type=atom_type_sym2num["Na"]
+    total_BA_count=0
+    total_NBA_count=0
+    Na_BA={}
+    Na_NBA={}
+    for i in config1.id:
+      if config1.type[i] == Na_type:
+        BA_count=0
+        NBA_count=0
+        for j in config1_nnl.nnl[i]:
+          if j in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
+            BA_count=BA_count+1
+          else :
+            NBA_count=NBA_count+1
+        temp1={i:BA_count}
+        temp2={i:NBA_count}
+        Na_BA.update(temp1)
+        Na_NBA.update(temp2)
+        total_BA_count=total_BA_count+BA_count
+        total_NBA_count=total_NBA_count+NBA_count
+    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms.data"),'w')
+    output1.write("# BA and NBA attached to Na\n")
+    output1.write("BA  = %d\t%.2f\n" %(total_BA_count,total_BA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("NBA = %d\t%.2f\n" %(total_NBA_count,total_NBA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("\n\n\n# atoms id \t Number_Of_BA\tNumber_of_NBA\n")
+    for i in config1.id:
+      if config1.type[i] == Na_type:
+        output1.write("%d  => %d\t%d\n" %(i,Na_BA[i],Na_NBA[i]))
+    output1.close()
+
+    output1=open(BASE_FILE+str("_Q")+str("Si.data"),'a+')
+    output1.write("\n\n")
+    output1.write("# Q Discretization\n")
+    output1.write("# total_network_cations\tnum_of_Al\tnum_of_P\t num_of_units\t %_of_units\n")
+    QmSinAl=[[[0 for i in range(5)] for j in range(5)] for k in range(5)]
+    for i in config1.id:
+      if atom_type_num2sym[config1.type[i]] == "Si" and config1_nnl.nnl_count[i] == 4:
+        Q_count=config1_Q.Q_status_atomid2num[i]
+        Al_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Al"])
+        P_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["P"])
+        if Al_count < 5 and P_count < 5:
+          QmSinAl[Q_count][Al_count][P_count]=QmSinAl[Q_count][Al_count][P_count]+1
+    for i in range(5):
+      for j in range(5):
+        for k in range(5):
+          temp1=QmSinAl[i][j][k]
+          if temp1 != 0:
+            output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["Si"]))
