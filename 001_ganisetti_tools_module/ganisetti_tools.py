@@ -434,16 +434,37 @@ def write_imd_header(output,box,rc,atom_type_sym2num):
   output.write("\n")
   output.write("#E \n")
 
+def write_imd_header_custom_property(output,box,property_name):
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Writing the IMD header into given output file with a custom property name
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  output.write("#F A 1 1 3 1 0\n")
+  output.write("#C number type x y z %s \n" %(str(property_name)))
+  output.write("#X %lf 0.0 0.0 \n" %(box[0][1]-box[0][0]))
+  output.write("#Y 0.0 %lf 0.0 \n" %(box[1][1]-box[1][0]))
+  output.write("#Z 0.0 0.0 %lf \n" %(box[2][1]-box[2][0]))
+  output.write("#E \n")
+
 def write_imd_atom(output,atom_id,config,config_nnl):
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-  * Writing the IMD header into given output file
+  * Writing the IMD atom data into a given output file
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   output.write("%d  %d  %lf  %lf  %lf %d \n" %(atom_id,config.type[atom_id],config.posx[atom_id],config.posy[atom_id],config.posz[atom_id],config_nnl.nnl_count[atom_id]))
 
-
+def write_imd_atom_custom_property(output,atom_id,config,prop):
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Writing the IMD atom data into a given output file with custom property 
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  output.write("%d  %d  %lf  %lf  %lf %s \n" %(atom_id,config.type[atom_id],config.posx[atom_id],config.posy[atom_id],config.posz[atom_id],str(prop)))
 
 class compute_each_atom_environment:
   """
