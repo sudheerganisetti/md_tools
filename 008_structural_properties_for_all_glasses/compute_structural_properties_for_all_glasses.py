@@ -217,9 +217,10 @@ if __name__=="__main__":
   for i in given_formers_sym2num.keys():
     output1=open(BASE_FILE+str("_Q")+str(i)+str(".data"),'w')
     output1.write("# Q(n) speciation of %s\n" %(i))
-    output1.write("# n  number_of_units\n")
+    output1.write("# where n = number of bridging anions\n")
+    output1.write("# n  number_of_units %_of_units\n")
     for j in range(5):
-      output1.write("%d %d\t%.2lf \n" % (j, config1_Q.Q_summary[(i,j)], config1_Q.Q_summary[(i,j)] * 100.0 / total_atoms_of_type_sym[i]))
+      output1.write("%d\t%d\t\t%.2lf \n" % (j, config1_Q.Q_summary[(i,j)], config1_Q.Q_summary[(i,j)] * 100.0 / total_atoms_of_type_sym[i]))
       #print(config1_Q.Q_non4CoordFormers_list[i,j])
     output1.close()
   #for i in config1.id:
@@ -354,19 +355,50 @@ if __name__=="__main__":
   # For NAPS glass
   if NAPS_glass == "yes":
     Na_type=atom_type_sym2num["Na"]
+    # Na speciation
     total_BA_count=0
     total_NBA_count=0
     Na_BA={}
     Na_NBA={}
+    Na_descretization_in_BA  = {}
+    Na_descretization_in_NBA = {}
+    for Si_count in range(10):
+      for Al_count in range(10):
+        for P_count in range(10):
+          temp1={(Si_count,Al_count,P_count):0}
+          Na_descretization_in_BA.update(temp1)
+          Na_descretization_in_NBA.update(temp1)
     for i in config1.id:
       if config1.type[i] == Na_type:
         BA_count=0
         NBA_count=0
-        for j in config1_nnl.nnl[i]:
+        for j in config1_nnl.nnl[i]: # j=anion
           if j in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
             BA_count=BA_count+1
+            if ('Si',4) in config1_env.env_atomid[j]:
+              Si_count=config1_env.env_atomid[j][('Si',4)]
+            else:
+              Si_count=0
+            if ('Al',4) in config1_env.env_atomid[j]:
+              Al_count=config1_env.env_atomid[j][('Al',4)]
+            else:
+              Al_count=0
+            if ('P',4) in config1_env.env_atomid[j]:
+              P_count=config1_env.env_atomid[j][('P',4)]
+            else:
+              P_count=0
+            temp1={(Si_count,Al_count,P_count):Na_descretization_in_BA[(Si_count,Al_count,P_count)]+1}
+            Na_descretization_in_BA.update(temp1)
           else :
             NBA_count=NBA_count+1
+            Si_count=0
+            Al_count=0
+            P_count=0
+            Si_count=config1_nnl.nnl_type_sym[j].count('Si')
+            Al_count=config1_nnl.nnl_type_sym[j].count('Al')
+            P_count=config1_nnl.nnl_type_sym[j].count('P')
+            temp1={(Si_count,Al_count,P_count):Na_descretization_in_NBA[(Si_count,Al_count,P_count)]+1}
+            Na_descretization_in_NBA.update(temp1)
         temp1={i:BA_count}
         temp2={i:NBA_count}
         Na_BA.update(temp1)
@@ -375,52 +407,131 @@ if __name__=="__main__":
         total_NBA_count=total_NBA_count+NBA_count
     output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms.data"),'w')
     output1.write("# BA and NBA attached to Na\n")
-    output1.write("BA  = %d\t%.2f\n" %(total_BA_count,total_BA_count*100.0/(total_BA_count+total_NBA_count)))
-    output1.write("NBA = %d\t%.2f\n" %(total_NBA_count,total_NBA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("# Na-Anion(type)\tnum_of_bonds\t%_of_Na\n")
+    output1.write("BA\t\t\t= %d\t\t%.2f\n" %(total_BA_count,total_BA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("NBA\t\t\t= %d\t\t%.2f\n" %(total_NBA_count,total_NBA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("\n\n# Detailed speciation\n")
+    output1.write("# Na-Anion(type)\tnum_of_bonds\t%_of_Na\n")
+    for Si_count in range(3):
+      for Al_count in range(3):
+        for P_count in range(3):
+          temp3=Na_descretization_in_BA[(Si_count,Al_count,P_count)]
+          if temp3 !=0:
+            temp1=[0 for i in range(2)]
+            temp2=0
+            if Si_count == 1:
+              temp1[temp2]="Si"
+              temp2=temp2+1
+            elif Si_count == 2:
+              temp1[0]="Si"
+              temp1[1]="Si"
+            if Al_count == 1:
+              temp1[temp2]="Al"
+              temp2=temp2+1
+            elif Al_count == 2:
+              temp1[0]="Al"
+              temp1[1]="Al"
+            if P_count == 1:
+              temp1[temp2]="P"
+              temp2=temp2+1
+            elif P_count == 2:
+              temp1[0] = "P"
+              temp1[1] = "P"
+            output1.write("Na in %s - BA - %s\t= %d\t\t%.2f\n" %(str(temp1[0]),str(temp1[1]),temp3,temp3*100.0/(total_BA_count+total_NBA_count)))
+    other_type=0
+    output1.write("\n")
+    for Si_count in range(10):
+      for Al_count in range(10):
+        for P_count in range(10):
+    #for i in Na_descretization_in_NBA.keys():
+    #  Si_count=i[0]
+    #  Al_count=i[1]
+    #  P_count=i[2]
+          temp3=Na_descretization_in_NBA[(Si_count,Al_count,P_count)]
+          if temp3 != 0:
+            if Si_count+Al_count+P_count == 1:
+              if Si_count == 1:
+                output1.write("Na in Si - NBA\t\t= %d\t\t%.2f\n" % (temp3, temp3 * 100.0 / (total_BA_count + total_NBA_count)))
+              elif Al_count == 1:
+                output1.write("Na in Al - NBA\t\t= %d\t\t%.2f\n" % (temp3, temp3 * 100.0 / (total_BA_count + total_NBA_count)))
+              elif P_count == 1:
+                output1.write("Na in P  - NBA\t\t= %d\t\t%.2f\n" % (temp3, temp3 * 100.0 / (total_BA_count + total_NBA_count)))
+            else:
+              other_type=other_type+temp3
+    output1.write("Na in tri-clusters or over coordinated formers \t= %d\t%.2f\n" % (other_type, other_type * 100.0 / (total_BA_count + total_NBA_count)))
     output1.write("\n\n\n# atoms id \t Number_Of_BA\tNumber_of_NBA\n")
     for i in config1.id:
       if config1.type[i] == Na_type:
         output1.write("%d  => %d\t%d\n" %(i,Na_BA[i],Na_NBA[i]))
     output1.close()
 
+    # Q(Si) distribution
     output1=open(BASE_FILE+str("_Q")+str("Si.data"),'a+')
     output1.write("\n\n")
     output1.write("# Q Discretization\n")
-    output1.write("# total_network_cations\tnum_of_Al\tnum_of_P\t num_of_units\t %_of_units\n")
-    QmSinAl=[[[0 for i in range(5)] for j in range(5)] for k in range(5)]
-    for i in config1.id:
-      if atom_type_num2sym[config1.type[i]] == "Si" and config1_nnl.nnl_count[i] == 4:
-        Q_count=config1_Q.Q_status_atomid2num[i]
-        Al_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Al"])
-        P_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["P"])
-        if Al_count < 5 and P_count < 5:
-          QmSinAl[Q_count][Al_count][P_count]=QmSinAl[Q_count][Al_count][P_count]+1
-    for i in range(5):
-      for j in range(5):
-        for k in range(5):
-          temp1=QmSinAl[i][j][k]
-          if temp1 != 0:
-            output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["Si"]))
-
-    output1=open(BASE_FILE+str("_Q")+str("P.data"),'a+')
-    output1.write("\n\n")
-    output1.write("# Q Discretization\n")
-    output1.write("# total_network_cations\tnum_of_Al\tnum_of_Si\t num_of_units\t %_of_units\n")
+    output1.write("# Qa(bAl)(cP); where a= total_network_cations; b=num_of_Al; c=num_of_P\n")
+    output1.write("# a\tb\tc\tnum_of_units\t%_of_units\n")
     temp_Q=[[[0 for i in range(5)] for j in range(5)] for k in range(5)]
     for i in config1.id:
-      if atom_type_num2sym[config1.type[i]] == "P" and config1_nnl.nnl_count[i] == 4:
-        Q_count=config1_Q.Q_status_atomid2num[i]
-        Al_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Al"])
-        if "Si" in given_formers_sym2num.keys():
-          Si_count=config1_Q.Q_4CoordFormers_id2sym_list[i].count(atom_type_sym2num["Si"])
-        else:
-          Si_count=0
-        if Al_count < 5 and Si_count < 5:
-          temp_Q[Q_count][Al_count][Si_count]=temp_Q[Q_count][Al_count][Si_count]+1
+      if atom_type_num2sym[config1.type[i]] == "Si" and config1_nnl.nnl_count[i] == 4:
+        Q_count = config1_Q.Q_status_atomid2num[i]
+        Al_count=0
+        P_count=0
+        for j in config1_nnl.nnl[i]:
+          if ('Al',4) in config1_env.env_atomid[j].keys():
+            if config1_env.env_atomid[j][('Al',4)] == 1:
+              Al_count = Al_count+1
+          if ('P',4) in config1_env.env_atomid[j].keys():
+            if config1_env.env_atomid[j][('P', 4)] == 1:
+              P_count = P_count+1
+        temp_Q[Q_count][Al_count][P_count]=temp_Q[Q_count][Al_count][P_count]+1
     for i in range(5):
       for j in range(5):
         for k in range(5):
           temp1=temp_Q[i][j][k]
           if temp1 != 0:
-            output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["P"]))
+            output1.write("%d\t%d\t%d\t%d\t%.2f\n" %(i,j,k,temp1,temp1*100.0/total_atoms_of_type_sym["Si"]))
 
+    # Q(P) distribtuion
+    output1=open(BASE_FILE+str("_Q")+str("P.data"),'a+')
+    output1.write("\n\n# Q Discretization\n")
+    temp1_Q=[[0 for i in range(5)] for j in range(5)]
+    temp2_Q=[[[0 for i in range(5)] for j in range(5)] for k in range(5)]
+    temp3_Q=[0 for i in range(5)]
+    for i in config1.id:
+      if atom_type_num2sym[config1.type[i]] == "P" and config1_nnl.nnl_count[i] == 4:
+        P_count=0
+        Al_count=0
+        Si_count=0
+        for j in config1_nnl.nnl[i]:
+          P_count=P_count+config1_env.env_atomid[j][('P',4)]-1
+          if ('Al', 4) in config1_env.env_atomid[j].keys():
+            if config1_env.env_atomid[j][('Al', 4)] == 1:
+              Al_count = Al_count + 1
+          if ('Si', 4) in config1_env.env_atomid[j].keys():
+            if config1_env.env_atomid[j][('Si', 4)] == 1:
+              Si_count = Si_count + 1
+        temp3_Q[P_count]=temp3_Q[P_count]+1
+        temp1_Q[P_count][Al_count]=temp1_Q[P_count][Al_count]+1
+        temp2_Q[P_count][Al_count][Si_count]=temp2_Q[P_count][Al_count][Si_count]+1
+    output1.write("# Q(aP); where a= num_of_P\n")
+    output1.write("# a\tnum_of_units\t%_of_units\n")
+    for i in range(5):
+      temp3=temp3_Q[i]
+      if temp3 !=0:
+        output1.write("%d\t%d\t\t%.2f\n" %(i,temp3,temp3*100.0/total_atoms_of_type_sym["P"]))
+    output1.write("\n\n# Q(aP)(bAl); where a= num_of_P; b=num_of_Al\n")
+    output1.write("# a\tb\tnum_of_units\t%_of_units\n")
+    for i in range(5):
+      for j in range(5):
+        temp1=temp1_Q[i][j]
+        if temp1 != 0:
+          output1.write("%d\t%d\t%d\t\t%.2f\n" %(i,j,temp1,temp1*100.0/total_atoms_of_type_sym["P"]))
+    output1.write("\n\n# Q(aP)(bAl)(cSi); where a= num_of_P; b=num_of_Al; c=num_of_Si\n")
+    output1.write("# a\tb\tc\tnum_of_units\t%_of_units\n")
+    for i in range(5):
+      for j in range(5):
+        for k in range(5):
+          temp2=temp2_Q[i][j][k]
+          if temp2 != 0:
+            output1.write("%d\t%d\t%d\t%d\t\t%.2f\n" %(i,j,k,temp2,temp2*100.0/total_atoms_of_type_sym["P"]))
