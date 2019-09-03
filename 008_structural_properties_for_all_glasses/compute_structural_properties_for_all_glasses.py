@@ -37,6 +37,9 @@ if __name__=="__main__":
   NAPS_glass="no"
   if "P" in temp1 and "Al" in temp1 and "Na" in temp1:
     NAPS_glass="yes"
+  CMAS_glass="no"
+  if "Ca" in temp1 and "Mg" in temp1 and "Al" in temp1 and "Si" in temp1:
+    CMAS_glass="yes"
 
   # main loop starts here
   BASE_FILE=str(sys.argv[1])
@@ -535,3 +538,43 @@ if __name__=="__main__":
           temp2=temp2_Q[i][j][k]
           if temp2 != 0:
             output1.write("%d\t%d\t%d\t%d\t\t%.2f\n" %(i,j,k,temp2,temp2*100.0/total_atoms_of_type_sym["P"]))
+
+  # For CMAS glass
+  if CMAS_glass == "yes":
+    #temp5={}
+    #for i in range(5):
+    #  temp1={i:0}
+    #  temp5.update(temp1)
+    #for i in config1.id:
+    #  if config1.type[i] == atom_type_sym2num["Al"] and config1_nnl.nnl_count[i] == 5:      # i = 5 coord Al atoms
+    #    for j in config1_nnl.nnl[i]:                                                        # j = Oxygen atoms
+    #      # print(config1_env.env_atomid[j])
+    #      temp1={}
+    #      temp3=0
+    #      for k in config1_env.env_atomid[j].keys():
+    #        if list(k)[0] in given_formers_sym2num.keys():
+    #          temp2={k:config1_env.env_atomid[j][k]}
+    #          temp1.update(temp2)
+    #          temp3=temp3+config1_env.env_atomid[j][k]
+    #      temp4={temp3:temp5[temp3]+1}
+    #      temp5.update(temp4)
+    #      print(temp1)
+    #for i in range(4):
+    #  print(i,temp5[i])
+    output1 = open(BASE_FILE + str("_") + str("Al") + str("_coord"), 'a+')
+    output1.write("\n# 5 coordinated Al that are associated with tri-clusters and their percentage among total 5 coordinated Al\n")
+    temp1=0
+    for i in config1.id:
+      if config1.type[i] == atom_type_sym2num["Al"] and config1_nnl.nnl_count[i] == 5:  # i = 5 coord Al atoms
+        temp2=0
+        for j in config1_nnl.nnl[i]:                                                    # j = Oxygen atoms
+          if j in config1_anions_distribution.tri_cluster_former_id2list.keys():
+            temp2=1
+            # print(config1_env.env_atomid[j])
+        if temp2 == 1:
+          temp1 = temp1 + 1
+          # print(config1_env.env_atomid[i])
+    output1.write("%d\t%.2lf" %(temp1,temp1*100.0/config1_coord.individual_coord_sym[("Al",5)]))
+    output1.close()
+
+
