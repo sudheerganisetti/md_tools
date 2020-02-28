@@ -15,7 +15,7 @@ import git
 import os
 
 __author__  = "Sudheer Ganisetti"
-__version__ = "71"
+__version__ = "72"
 __email__   = "sudheerganisetti@gmail.com"
 __status__  = "under preparation..."
 
@@ -929,11 +929,11 @@ class read_command_line:
     tot_argv = len(sys_argv)
     CREDBG = '\33[31m' # \33[41m for red background
     CREDBGEND = '\x1b[0m'
-    known_cations = ['Si','Al','P','Na','Ca','Mg','Sr'] # The cations list should be updated if you want to add a new cation
+    known_cations = ['Si','Al','P','Na','Ca','Mg','Sr','Li','K','V'] # The cations list should be updated if you want to add a new cation
     known_anions  = ['O','F']                      # The anions list should be updated if you want to add a new anion
     known_all_atom_types = known_cations + known_anions
-    known_network_formers=['Si','Al','P']
-    known_modifiers      =['Na','Ca','Mg','Sr']
+    known_network_formers=['Si','Al','P','V']
+    known_modifiers      =['Na','Ca','Mg','Sr','Li','K']
 
     # while is using to handle the error rather iterating the loop
     while error1_statement == "none":
@@ -1705,3 +1705,95 @@ class compute_anions_distribution:
     self.total_anions_of_any_other_type_sym2count     = Any_other_type_anion_count
 
     self.triplets_AmBCn2count                         = triplets_count
+
+
+class compute_atoms_density:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * This is my own idea: -- Sudheer
+  * Compute the atoms density at each point in space based on the surrounding atoms
+  *
+  * usage: config1=ganisetti_tools.compute_atoms_density(config,voxel_length,voxels_count_for_smoothing,given_atom_ids,atom_type_num2sym)
+  * where config    = ganisetti_tools.get_atoms_info_from_lammps(01.dump)
+  *       voxel_length = 2.5/5
+  *       voxels_count_for_smoothing = 3
+  *       atom_type_num2sym = {"1":"O", "2":"Si", "3":"Al", etc,.}
+  *
+  * output: config1.density
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,config,rcut,vox_smooth,given_atoms):
+
+
+    # Devide the box into voxels
+    MaxCells_X=int(config.box_xx/rcut)
+    MaxCells_Y=int(config.box_yy/rcut)
+    MaxCells_Z=int(config.box_zz/rcut)
+
+    # LEC= Length of Each Cell
+    LEC_X=float(config.box_xx/MaxCells_X)
+    LEC_Y=float(config.box_yy/MaxCells_Y)
+    LEC_Z=float(config.box_zz/MaxCells_Z)
+
+    # define parameters
+    self.atoms_density={}
+    temp_atoms_density={}
+
+    # store atom positions locally
+    atom_posx=config.posx
+    atom_posy=config.posy
+    atom_posz=config.posz
+    # move the box to center and correspondingly atoms if the corner of the box is not at center
+    for i in given_atoms:
+      atom_posx[i]=config.posx[i]-config.box[0][0]
+      atom_posy[i]=config.posy[i]-config.box[1][0]
+      atom_posz[i]=config.posz[i]-config.box[2][0]
+      # If the atoms are outside of the box then bring them into other side according to PBC
+      if atom_posx[i] >= config.box_xx:
+        atom_posx[i]=atom_posx[i]-config.box_xx
+      if atom_posy[i] >= config.box_yy:
+        atom_posy[i]=atom_posy[i]-config.box_yy
+      if atom_posz[i] >= config.box_zz:
+        atom_posz[i]=atom_posz[i]-config.box_zz
+      #assign the atoms into respective cell number  #assign the atoms into respective cell number; cell numbers starts with 0
+      cellX=int(atom_posx[i]/LEC_X)
+      cellY=int(atom_posy[i]/LEC_Y)
+      cellZ=int(atom_posz[i]/LEC_Z)
+
+      # add 1 to the voxel that belong to the atom 'i' and also the surrounding 'vox_smooth' number of voxels 
+      for ix in range(cellX-vox_smooth,cellX+vox_smooth+1):
+        # Dealing with periodic boundary conditions
+        if ix < 0:
+          ix = MaxCells_X+ix
+        if ix >= MaxCells_X:
+          ix = ix - MaxCells_X
+
+        for iy in range(cellY-vox_smooth,cellY+vox_smooth+1):
+          # Dealing with periodic boundary conditions
+          if iy < 0:
+            iy = MaxCells_Y + iy
+          if iy >= MaxCells_Y:
+            iy = iy - MaxCells_Y
+
+          for iz in range(cellZ-vox_smooth,cellZ+vox_smooth+1):
+            # Dealing with periodic boundary conditions
+            if iz < 0:
+              iz = MaxCells_Z + iz
+            if iz >= MaxCells_Z:
+              iz = iz - MaxCells_Z
+
+            temp1=(ix,iy,iz) in temp_atoms_density.keys()
+            if temp1 == False:
+              temp2={(ix,iy,iz):0}
+              temp_atoms_density.update(temp2)
+            temp3={(ix,iy,iz):temp_atoms_density[(ix,iy,iz)]+1}
+            temp_atoms_density.update(temp3)
+            
+    temp2_atoms_density={}
+    for i,j,k in temp_atoms_density.keys():
+      temp1={(i*LEC_X,j*LEC_Y,k*LEC_Z):temp_atoms_density[(i,j,k)]}
+      temp2_atoms_density.update(temp1)
+
+    self.atoms_density = temp2_atoms_density
+          
