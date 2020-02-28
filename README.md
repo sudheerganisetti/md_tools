@@ -28,6 +28,17 @@ The main intension of these programs is to post-process the output files of the 
 09) 009_compute_pair_distribution		: computes pair distribution function of any glass composition (still need to normalize)
 10) 010_IMD_projection_of_pair_distribution	: computes projection of pair distribution function on x,y, and z-axis
 11) 011_IMD_projection_of_angle_distribution    : computes azimuthal and polar angles from the angle distributions
+12) 012_compute_broken_bonds			: computes broken bonds when given two files contains same number of atoms
+13) 013_change_atom_type_of_selected_atoms	: changes the atom type of selected atoms
+14) 014_ReadingAtomNumbersFromAFileAndCollectingThem : three different codes exist for reading atoms from a file and collect only these atoms from: (1) imd chkpt file (2) lammps dump file (3) nnl file
+15) 015_compute_common_atoms_of_two_data_files	: get the common atoms of two data files (for example two ring data files)
+16) 016_separating_each_tetrahedron		: separate each tetrahedron
+17) 017_extracting_atoms_of_a_ring_and_its_neighbours : extract the atoms of a given ring and also their neighbors from a given chkpt file
+18) 018_script_to_extract_edge_corner_tets_info : extract the edge and corner sharing tetrahedra information from a rings_code output file
+19) 019_making_SLICES_compute_Guttman_rings	: make the sample into slices and compute the ring statistics with Gutman rings criterion using rings_code
+20) 020_mean_square_displacement		: compute mean square displacement
+21) 021_bond_orientations_alpha_beta		: compute orientation of each bond in terms of alpha and beta in spherical coordinates
+22) 022_compute_local_atomic_density_based_on_voxels : the local atomic density has been calculated for the given atoms from a lammps dum file which can be useful to analyze the channel regions formed by the given atoms 
 
 NOTE: IMD input or output file formats will not work for all the programs, however, this can be solved in near future.
 
