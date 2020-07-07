@@ -61,7 +61,7 @@ for i in config1.id:
   if config1.type[i] == atom_type_sym2num["P"]:
   	all_density_required_atoms.append(i)
 
-config1_atoms_density=ganisetti_tools.compute_atoms_density(config1,0.8,3,all_density_required_atoms)
+config1_atoms_density=ganisetti_tools.compute_atoms_density(config1,0.4,8,all_density_required_atoms)
 output1=open("temporary.txt",'w')
 ganisetti_tools.write_imd_header_custom_property(output1,config1.box,"local_atoms_density")
 """
@@ -76,7 +76,7 @@ output1.write("#E \n")
 """
 count=1
 for i,j,k in config1_atoms_density.atoms_density.keys():
-  output1.write("%d 1 %.4lf %.4lf %.4lf %d\n" %(count,float(i),float(j),float(k),config1_atoms_density.atoms_density[(i,j,k)]))
+  output1.write("%d 1 %.4lf %.4lf %.4lf %lf\n" %(count,float(i),float(j),float(k),config1_atoms_density.atoms_density[(i,j,k)]))
   count=count+1
 output1.close()
 

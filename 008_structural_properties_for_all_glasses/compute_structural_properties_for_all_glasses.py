@@ -8,6 +8,8 @@ This code is to compute nnl, nnlchk,  connectivity(Qn) and A-O-A triplets for th
 
 import sys
 import ganisetti_tools
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 if __name__=="__main__":
@@ -189,6 +191,7 @@ if __name__=="__main__":
       if j[0] == i:
         temp1=0
         temp2=[]
+        number_of_tabs_for_formatting_in_the_output_file=0
         for k in j:
           if temp1 > 0:
             if k[1] != 0:
@@ -197,8 +200,12 @@ if __name__=="__main__":
             temp1=temp1+1
         for k in temp2:
           output1.write("%s " %(str(k)))
+          number_of_tabs_for_formatting_in_the_output_file=number_of_tabs_for_formatting_in_the_output_file+1
         temp3=config1_env.all_possible_local_env_and_counts[j]
-        output1.write("\t\t\t=> %d ( %.2lf )\n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+        for num_tabs in range(5-number_of_tabs_for_formatting_in_the_output_file):
+          output1.write("\t")
+        output1.write(" => \t%d \t%.2lf \n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+
     output1.close()
   #config1_env.all_possible_local_env_and_counts={(O,(Si,1),(Al,1)):154} # total O which is in Si-O-Al are 154
   #config1_env.env_atomid[0]={('Si',4):1,('Al',4):1}
@@ -408,7 +415,7 @@ if __name__=="__main__":
         Na_NBA.update(temp2)
         total_BA_count=total_BA_count+BA_count
         total_NBA_count=total_NBA_count+NBA_count
-    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms.data"),'w')
+    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms1.data"),'w')
     output1.write("# BA and NBA attached to Na\n")
     output1.write("# Na-Anion(type)\tnum_of_bonds\t%_of_Na\n")
     output1.write("BA\t\t\t= %d\t\t%.2f\n" %(total_BA_count,total_BA_count*100.0/(total_BA_count+total_NBA_count)))
@@ -468,6 +475,38 @@ if __name__=="__main__":
         output1.write("%d  => %d\t%d\n" %(i,Na_BA[i],Na_NBA[i]))
     output1.close()
 
+    # For contour density plot of Na in BA and NBA
+    Na_BA_and_NBA={}
+    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms2.data"),'w')
+    output1.write("#BO\tNBO\tNumber_Of_Na_atoms\n")
+    #for i in range(max(Na_BA.values())+1):
+    #  for j in range(max(Na_NBA.values())+1):
+    for i in range(11):
+      for j in range(11):
+        temp1={(i,j):0}
+        Na_BA_and_NBA.update(temp1)
+
+    for i in Na_BA.keys():
+      temp1={(Na_BA[i],Na_NBA[i]):Na_BA_and_NBA[(Na_BA[i],Na_NBA[i])]+1}
+      Na_BA_and_NBA.update(temp1)
+    # preparing data for plot
+    x=[]
+    y=[]
+    z=[]
+    for i in Na_BA_and_NBA.keys():
+      x.append(i[0])
+      y.append(i[1])
+      z.append(0.5*Na_BA_and_NBA[i]**2)
+      output1.write("%d\t%d\t%d\n" %(i[0],i[1],Na_BA_and_NBA[i]))
+    # preparing fig
+    fig1=plt.figure()
+    ax1= fig1.add_subplot(111)
+    plt.scatter(x,y,s=z,alpha=0.5)
+    ax1.set_xlabel("BO")
+    ax1.set_ylabel("NBO")
+    plt.savefig('Fig01_Na_in_BO_and_NBO_density_plot.png',bbox_inches='tight',dpi=600)
+    output1.close()
+    
     # Q(Si) distribution
     output1=open(BASE_FILE+str("_Q")+str("Si.data"),'a+')
     output1.write("\n\n")

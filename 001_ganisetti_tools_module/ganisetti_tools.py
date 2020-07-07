@@ -15,7 +15,7 @@ import git
 import os
 
 __author__  = "Sudheer Ganisetti"
-__version__ = "72"
+__version__ = "73"
 __email__   = "sudheerganisetti@gmail.com"
 __status__  = "under preparation..."
 
@@ -1739,7 +1739,7 @@ class compute_atoms_density:
     # define parameters
     self.atoms_density={}
     temp_atoms_density={}
-
+    temp_factor1=1.73205080756888*vox_smooth  # sqrt(3)*vox_smooth
     # store atom positions locally
     atom_posx=config.posx
     atom_posy=config.posy
@@ -1763,6 +1763,7 @@ class compute_atoms_density:
 
       # add 1 to the voxel that belong to the atom 'i' and also the surrounding 'vox_smooth' number of voxels 
       for ix in range(cellX-vox_smooth,cellX+vox_smooth+1):
+        raw_ix=ix-cellX
         # Dealing with periodic boundary conditions
         if ix < 0:
           ix = MaxCells_X+ix
@@ -1770,6 +1771,7 @@ class compute_atoms_density:
           ix = ix - MaxCells_X
 
         for iy in range(cellY-vox_smooth,cellY+vox_smooth+1):
+          raw_iy=iy-cellY
           # Dealing with periodic boundary conditions
           if iy < 0:
             iy = MaxCells_Y + iy
@@ -1777,6 +1779,7 @@ class compute_atoms_density:
             iy = iy - MaxCells_Y
 
           for iz in range(cellZ-vox_smooth,cellZ+vox_smooth+1):
+            raw_iz=iz-cellZ
             # Dealing with periodic boundary conditions
             if iz < 0:
               iz = MaxCells_Z + iz
@@ -1785,9 +1788,15 @@ class compute_atoms_density:
 
             temp1=(ix,iy,iz) in temp_atoms_density.keys()
             if temp1 == False:
-              temp2={(ix,iy,iz):0}
+              temp2={(ix,iy,iz):0.0}
               temp_atoms_density.update(temp2)
-            temp3={(ix,iy,iz):temp_atoms_density[(ix,iy,iz)]+1}
+            temp_factor2=pow(raw_ix,2)+pow(raw_iy,2)+pow(raw_iz,2)
+            if temp_factor2 == 0:
+              temp_factor3=temp_factor1
+            else :
+              temp_factor3=temp_factor1/np.sqrt(temp_factor2)
+
+            temp3={(ix,iy,iz):temp_atoms_density[(ix,iy,iz)]+temp_factor3}
             temp_atoms_density.update(temp3)
             
     temp2_atoms_density={}
