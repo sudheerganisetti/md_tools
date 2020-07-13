@@ -1564,6 +1564,7 @@ class compute_anions_distribution:
 
     BA_4Coord_former                    = {}
     BA_non4Coord_former                 = {}
+    modifiers                           = {}
     tri_cluster_former                  = {}
     NBA_former                          = {}
     anions_connected_to_no_former       = {}
@@ -1665,6 +1666,7 @@ class compute_anions_distribution:
           Any_other_type_anion.update(temp6)
           temp1={B:Any_other_type_anion_count[B]+1}
           Any_other_type_anion_count.update(temp1)
+        modifiers.update(temp3_modifier)
 
         # the following loop is to compute triplets i.e Si[4]-O-Al[4], Si[4]-O-Al[5], etc.
         # Do not include triclusters
@@ -1691,7 +1693,7 @@ class compute_anions_distribution:
 
     self.BA_4CoordFormer_id2list                      = BA_4Coord_former
     self.BA_non4CoordFormer_id2list                   = BA_non4Coord_former
-    self.modifiers_id2list                            = temp3_modifier
+    self.modifiers_id2list                            = modifiers
     self.tri_cluster_former_id2list                   = tri_cluster_former
     self.NBA_former_id2list                           = NBA_former
     self.anions_with_zero_formers_id2list             = anions_connected_to_no_former

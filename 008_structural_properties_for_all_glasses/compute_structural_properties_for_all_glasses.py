@@ -507,6 +507,41 @@ if __name__=="__main__":
     plt.savefig('Fig01_Na_in_BO_and_NBO_density_plot.png',bbox_inches='tight',dpi=600)
     output1.close()
     
+    # Seperate the Na and BO, and Na and NBO atoms
+    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na__Na_BO_atoms.atoms"),'w')
+    output2=open(BASE_FILE+str("_BA_and_NBA_around_Na__Na_NBO_atoms.atoms"),'w')
+    output3=open(BASE_FILE+str("_BA_and_NBA_around_Na__BO_atoms_no_Na.atoms"),'w')
+    ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
+    ganisetti_tools.write_imd_header(output2,config1.box,rc,atom_type_sym2num)
+    ganisetti_tools.write_imd_header(output3,config1.box,rc,atom_type_sym2num)
+    Na_in_BO__Na_O_atoms=[]
+    Na_in_NBO__Na_O_atoms=[]
+    BO_without_Na__O_atoms=[]
+    for anion_id in config1_anions_distribution.modifiers_id2list.keys():
+      if anion_id in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
+      	if len(config1_anions_distribution.modifiers_id2list[anion_id]) > 0: 	# the anion_id has atleast one modifier
+      	  Na_in_BO__Na_O_atoms.append(anion_id)
+      	  for j in config1_anions_distribution.modifiers_id2list[anion_id]:
+      	    Na_in_BO__Na_O_atoms.append(j)
+      	else:																	# the anion_id does not have any modifier
+      	  BO_without_Na__O_atoms.append(anion_id)
+      else :
+      	Na_in_NBO__Na_O_atoms.append(anion_id)
+      	for j in config1_anions_distribution.modifiers_id2list[anion_id]:
+      	  Na_in_NBO__Na_O_atoms.append(j)
+    Na_in_BO__Na_O_atoms=list(set(Na_in_BO__Na_O_atoms))
+    Na_in_NBO__Na_O_atoms=list(set(Na_in_NBO__Na_O_atoms))
+    BO_without_Na__O_atoms=list(set(BO_without_Na__O_atoms))
+    for i in Na_in_BO__Na_O_atoms:
+      ganisetti_tools.write_imd_atom(output1,i,config1,config1_nnl)
+    for i in Na_in_NBO__Na_O_atoms:
+      ganisetti_tools.write_imd_atom(output2,i,config1,config1_nnl)
+    for i in BO_without_Na__O_atoms:
+      ganisetti_tools.write_imd_atom(output3,i,config1,config1_nnl)
+    output1.close()
+    output2.close()
+    output3.close()
+
     # Q(Si) distribution
     output1=open(BASE_FILE+str("_Q")+str("Si.data"),'a+')
     output1.write("\n\n")
