@@ -86,6 +86,7 @@ class get_atoms_info_from_imd:
   *             config1.box_yy             = box_yy
   *             config1.box_zz             = box_zz
   *             config1.box                = np.array([[box_xx_lo,box_xx_hi],[box_yy_lo,box_yy_hi],[box_zz_lo,box_zz_hi]])
+  *             config1.imd_box            = np.array([[box_xx,box_yy,box_zz],[box_yx,box_yy,box_yz],[box_zx,box_zy,box_zz]])
   *             config1.id[id]             =id
   *             config1.type[id]           =int(i[1])
   *             config1.mass[id]           =float(i[2])
@@ -109,6 +110,9 @@ class get_atoms_info_from_imd:
             print("#  ERROR: It seems the given file is not in imd format  #")
             print("#                                                       #")
             print("#########################################################")
+            break
+          else:
+            imd_header_properties1=data
         if data[0] == "#X":
           box_xx = float(data[1])
           box_xy = float(data[2])
@@ -121,12 +125,58 @@ class get_atoms_info_from_imd:
           box_zx = float(data[1])
           box_zy = float(data[2])
           box_zz = float(data[3])
+        if data[0] == "#C":
+          imd_header_properties2=data
       count = count + 1
-   
+  
+    '''
+    # The following loop is to generalize the reading imd file but did not complete
+    imd_header_index2property={}
+    imd_header_property2index={}
+    for i in range(1,len(imd_header_properties2)):
+      temp1={i-1:imd_header_properties2[i]}
+      imd_header_index2property.update(temp1)
+      temp1={imd_header_properties2[i]:i-1}
+      imd_header_property2index.update(temp1)
+    if imd_header_index2property[imd_header_property2index[]] != "number":
+      warning_alarm=1
+      warnin_message="WARNING: please make sure the first column of input file is 'number' "
+    if imd_header_index2property[1] != "mass":
+    
+    imd_header_properties3={} 
+    imd_header_properties4={}
+    imd_header_properties5={}
+      #temp1=imd_header_properties1_summation[i-1]+int(imd_header_properties1[i])
+      #imd_header_properties1_summation.append(temp1)
+    #id_index              = 0  # the first column of imd file should always be atom id 
+    #type_index            = 1  # the second column of imd file should always be atom type
+    #if imd_header_properties1[4] == "1":
+    #  mass_index          = count1 + 1
+    #  if imd_header_properties2[3] != "mass":
+    #    print("#############################################################################################################")
+    #    print("#                                                                                                           #")
+    #    print("#  WARNING: It seems the third column is not mass but considered it as mass so becareful with the analysis  #")
+    #    print("#                                                                                                           #")
+    #    print("#############################################################################################################")
+    #posx_index            = 
+    #posy_index            = 
+    #posz_index            = 
+    #extra_property1_index =
+    #extra_property2_index =
+    #extra_property3_index =
+    #extra_property4_index =
+    '''
+    box_xx_lo = min(box_xx,box_yx,box_zx)
+    box_yy_lo = min(box_xy,box_yy,box_zy)
+    box_zz_lo = min(box_xz,box_yz,box_zz)
+    box_xx_hi = max(box_xx,box_yx,box_zx)
+    box_yy_hi = max(box_xy,box_yy,box_zy)
+    box_zz_hi = max(box_xz,box_yz,box_zz)
     self.box_xx          = box_xx + min(box_yx,box_zx)
     self.box_yy          = box_yy + min(box_xy,box_zy)
     self.box_zz          = box_zz + min(box_xz,box_yz)
-    self.box=np.array([[box_xx,box_xy,box_xz],[box_yx,box_yy,box_yz],[box_zx,box_zy,box_zz]])
+    self.imd_box         = np.array([[box_xx,box_xy,box_xz],[box_yx,box_yy,box_yz],[box_zx,box_zy,box_zz]])
+    self.box             = np.array([[box_xx_lo,box_xx_hi],[box_yy_lo,box_yy_hi],[box_zz_lo,box_zz_hi]])
     self.totalatoms      = len(atoms_data1)
 
     self.id     = {}
@@ -159,13 +209,13 @@ class get_atoms_info_from_lammps:
   *		config1.box_xx          	= box_xx
   *		config1.box_yy          	= box_yy
   *		config1.box_zz          	= box_zz
-  *		config1.box	     	= np.array([[box_xx_lo,box_xx_hi],[box_yy_lo,box_yy_hi],[box_zz_lo,box_zz_hi]])
-  *    		config1.id[id]     	=id
-  *    		config1.type[id]   	=int(i[1])
-  *    		config1.charge[id] 	=float(i[2])
-  *    		config1.posx[id]   	=float(i[3])
-  *    		config1.posy[id]   	=float(i[4])
-  *    		config1.posz[id]   	=float(i[5])
+  *		config1.box	     	        = np.array([[box_xx_lo,box_xx_hi],[box_yy_lo,box_yy_hi],[box_zz_lo,box_zz_hi]])
+  *   config1.id[id]     	      = id
+  *   config1.type[id]   	      = int(i[1])
+  *   config1.charge[id] 	      = float(i[2])
+  *   config1.posx[id]   	      = float(i[3])
+  *   config1.posy[id]   	      = float(i[4])
+  *   config1.posz[id]   	      = float(i[5])
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -234,12 +284,12 @@ class compute_nnl:
   *       rc[0][0]		= 2.2
   *       atom_type_num2sym	= {"1":"O", "2":"Si", "3":"Al", etc,.}
   *
-  * output: config1.nnl
-  *         config1.nnl_count
-  *         config1.nnl_type_num
-  *         config1.nnl_type_sym
-  *         config1.nnl_each_pair_distance
-  *         config1.max_nnl_each_atom_type_sym
+  * output: config1.nnl                           = {0:[1,2,3,4]}
+  *         config1.nnl_count                     = {0:4}
+  *         config1.nnl_type_num                  = {0:[1,1,1,1]}
+  *         config1.nnl_type_sym                  = {0:[Si,Si,Si,Si]}
+  *         config1.nnl_each_pair_distance        = {0:[1.58,1.62,1.59,1.60]}
+  *         config1.max_nnl_each_atom_type_sym    = {O:4,Si:4,Al:6,Ca:8}
   *
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
@@ -469,6 +519,29 @@ def write_imd_atom_custom_property(output,atom_id,config,prop):
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   output.write("%d  %d  %lf  %lf  %lf %s \n" %(atom_id,config.type[atom_id],config.posx[atom_id],config.posy[atom_id],config.posz[atom_id],str(prop)))
+
+def compute_pair_distance(i,j,config):
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Compute distance between two atoms
+  *
+  * usage: pair_distance = ganisetti_tools.compute_pair_distance(i,j,config1)
+  * 
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  rx = np.linalg.norm(config.posx[i]-config.posx[j])
+  ry = np.linalg.norm(config.posy[i]-config.posy[j])
+  rz = np.linalg.norm(config.posz[i]-config.posz[j])
+  box_xl=(config.box[0][1]-config.box[0][0])
+  box_yl=(config.box[1][1]-config.box[1][0])
+  box_zl=(config.box[2][1]-config.box[2][0])
+  if rx > box_xl/2.0:
+    rx = box_xl-rx
+  if ry > box_yl/2.0:
+    ry=box_yl-ry
+  if rz > box_zl/2.0:
+    rz=box_zl-rz
+  return float(np.linalg.norm([rx,ry,rz]))
 
 class compute_each_atom_environment:
   """

@@ -368,6 +368,8 @@ if __name__=="__main__":
     # Na speciation
     total_BA_count=0
     total_NBA_count=0
+    Na_BO_pair_distance=0.0
+    Na_NBO_pair_distance=0.0
     Na_BA={}
     Na_NBA={}
     Na_descretization_in_BA  = {}
@@ -415,11 +417,23 @@ if __name__=="__main__":
         Na_NBA.update(temp2)
         total_BA_count=total_BA_count+BA_count
         total_NBA_count=total_NBA_count+NBA_count
+        # computing average bond length of Na-BO and Na-NBO
+        count=0
+        for j in config1_nnl.nnl[i]:
+          if j in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
+      	    Na_BO_pair_distance=Na_BO_pair_distance+config1_nnl.nnl_each_pair_distance[i][count]
+          else:
+      	    Na_NBO_pair_distance=Na_NBO_pair_distance+config1_nnl.nnl_each_pair_distance[i][count]
+          count=count+1
     output1=open(BASE_FILE+str("_BA_and_NBA_around_Na_atoms1.data"),'w')
     output1.write("# BA and NBA attached to Na\n")
     output1.write("# Na-Anion(type)\tnum_of_bonds\t%_of_Na\n")
     output1.write("BA\t\t\t= %d\t\t%.2f\n" %(total_BA_count,total_BA_count*100.0/(total_BA_count+total_NBA_count)))
     output1.write("NBA\t\t\t= %d\t\t%.2f\n" %(total_NBA_count,total_NBA_count*100.0/(total_BA_count+total_NBA_count)))
+    output1.write("\n\n")
+    output1.write("Average bond length of Na-BA  = %lf\n" %(Na_BO_pair_distance/total_BA_count))
+    output1.write("Average bond length of Na-NBA = %lf\n" %(Na_NBO_pair_distance/total_NBA_count))
+    output1.write("\n\n")
     output1.write("\n\n# Detailed speciation\n")
     output1.write("# Na-Anion(type)\tnum_of_bonds\t%_of_Na\n")
     for Si_count in range(3):
@@ -542,6 +556,40 @@ if __name__=="__main__":
     output2.close()
     output3.close()
 
+    # All Na atoms and their neighbors, if neighbor O is BO assign type 11 or if neighbor O is NBO assign type 12 
+    output1=open(BASE_FILE+str("_BA_and_NBA_around_Na__Na_BO_NBO_atoms.atoms"),'w')
+    output2=open(BASE_FILE+str("_BO_and_Formers.atoms"),'w')
+    ganisetti_tools.write_imd_header(output1,config1.box,rc,atom_type_sym2num)
+    ganisetti_tools.write_imd_header(output2,config1.box,rc,atom_type_sym2num)
+    SelectAtoms1={}
+    for atom_id in config1.id:
+      if config1.type[atom_id] == atom_type_sym2num["Na"]:
+      	output1.write("%d  %d  %lf  %lf  %lf %d \n" %(atom_id,config1.type[atom_id],config1.posx[atom_id],config1.posy[atom_id],config1.posz[atom_id],config1_nnl.nnl_count[atom_id]))
+      	for Na_neighbour in config1_nnl.nnl[atom_id]:
+      	  if Na_neighbour in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
+      	  	output1.write("%d  %d  %lf  %lf  %lf %d \n" %(Na_neighbour,11,config1.posx[Na_neighbour],config1.posy[Na_neighbour],config1.posz[Na_neighbour],config1_nnl.nnl_count[Na_neighbour]))
+      	  else :
+      	  	output1.write("%d  %d  %lf  %lf  %lf %d \n" %(Na_neighbour,12,config1.posx[Na_neighbour],config1.posy[Na_neighbour],config1.posz[Na_neighbour],config1_nnl.nnl_count[Na_neighbour]))
+      #elif config1.type[atom_id] == atom_type_sym2num["Si"] or config1.type[atom_id] == atom_type_sym2num["Al"] or config1.type[atom_id] == atom_type_sym2num["P"]:
+      #	temp1={atom_id:atom_id}
+      #	SelectAtoms1.update(temp1)
+      #	for i in config1_nnl.nnl[atom_id]:
+      #	  temp1={i:i}
+      #	  SelectAtoms1.update(temp1)
+    #for i in SelectAtoms1.keys():
+    #  ganisetti_tools.write_imd_atom(output2,i,config1,config1_nnl)
+    #print(config1_anions_distribution.BA_4CoordFormer_id2list.keys())
+    for anion_id in config1_anions_distribution.BA_4CoordFormer_id2list.keys():
+      temp1={anion_id:anion_id}
+      SelectAtoms1.update(temp1)
+      for anion_neighbor in config1_anions_distribution.BA_4CoordFormer_id2list[anion_id]:
+      	temp1={anion_neighbor:anion_neighbor}
+      	SelectAtoms1.update(temp1)
+    for i in SelectAtoms1.keys():
+      ganisetti_tools.write_imd_atom(output2,i,config1,config1_nnl)
+    output1.close()
+    output2.close()
+    
     # Q(Si) distribution
     output1=open(BASE_FILE+str("_Q")+str("Si.data"),'a+')
     output1.write("\n\n")
