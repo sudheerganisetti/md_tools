@@ -6,6 +6,7 @@ import sys
 import os
 from time import sleep
 from datetime import datetime
+from playsound import playsound
 
 if os.geteuid() == 0:
     print("\nWe're root!\n")
@@ -72,6 +73,10 @@ while reconnections < 5:
       for i in every_our_data.keys():
         output1.write("%.2lf\t%.2lf\t%s\n" %(i,every_our_data[i],every_our_date[i]))
       output1.write("\n# !WARNING! internet is down at %s\n\n" %(date_and_time1))
+      try:
+      	playsound('/data/ganisetti/utilities/scripts/YourNetworkIsDown_BatteryLowEffect.mp3')
+      except:
+      	pass
       sleep(600)
       break
   reconnections=reconnections+1
