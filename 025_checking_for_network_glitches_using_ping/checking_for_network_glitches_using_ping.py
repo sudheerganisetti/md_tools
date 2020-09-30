@@ -15,25 +15,30 @@ else:
     subprocess.call(['sudo', 'python3', *sys.argv])
     sys.exit()
 
-print("\n\n#######################################################################")
-print("#                                                                     #")
-print("#                      Author: Sudheer Ganisetti                      #")
-print("#  You have submitted this job for checking your internet connection  #")
-print("#  you can find the log file at                                       #")
-print("#       /var/log/checking_internet_connection_by_sudheer              #")
-print("#  If the internet is up, the log is entered with 1 hour frequency    #")
-print("#  By default, it can check a maximum of 5 days                       #")
-print("#  If it is down, the last few minutes data is entered in detail      #")
-print("#  also, it will attempt to check 5 times (total of 1 hour)           #")
-print("#                                                                     #")
-print("#######################################################################\n\n")
+print("\n\n#########################################################################")
+print("#                                                                       #")
+print("#                      Author: Sudheer Ganisetti                        #")
+print("#  You have submitted this job for checking your internet connection    #")
+print("#  the default location for log file is                                 #")
+print("#       /var/log/checking_internet_connection_by_sudheer                #")
+print("#  if you cannot find there then check in the working directory         #")
+print("#  If the internet is up, the log is entered with one hour frequency    #")
+print("#  By default, it can check for a maximum of 5 days                     #")
+print("#  If it is down, the detailed log of the last few minutes is entered   #")
+print("#  also, it will attempt to check for 5 times (i.e, total of 1 hour)    #")
+print("#                                                                       #")
+print("#########################################################################\n\n")
 
 reconnections=0
 now=datetime.now()
 timestamp=now.timestamp()
 date_and_time1=now.ctime()
-log_file_path="/var/log/checking_internet_connection_by_sudheer/internet_connection_stability_checking_with_ping_"+str(timestamp)+".log"
-output1=open(log_file_path,'w')
+try:
+  log_file_path="/var/log/checking_internet_connection_by_sudheer/internet_connection_stability_checking_with_ping_"+str(timestamp)+".log"
+  output1=open(log_file_path,'w')
+except:
+  log_file_path="internet_connection_stability_checking_with_ping_"+str(timestamp)+".log"
+  output1=open(log_file_path,'w')
 output1.write("# hours_and_minutes \t time_for_receiving_the_last_64bits_data \t time_and_date")
 while reconnections < 5:
   hours=0
