@@ -468,6 +468,20 @@ class compute_nnl:
       temp1.update(temp2)
     self.max_nnl_each_atom_type_sym=temp1
 
+def write_imd_header_basic(output,box):
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Writing basic version of IMD header into given output file
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  output.write("#F A 1 1 3 0 0\n")
+  output.write("#C number type x y z \n")
+  output.write("#X %lf 0.0 0.0 \n" %(box[0][1]-box[0][0]))
+  output.write("#Y 0.0 %lf 0.0 \n" %(box[1][1]-box[1][0]))
+  output.write("#Z 0.0 0.0 %lf \n" %(box[2][1]-box[2][0]))
+  output.write("#E \n")
+
 
 def write_imd_header(output,box,rc,atom_type_sym2num):
   """
