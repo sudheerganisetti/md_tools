@@ -183,10 +183,13 @@ if __name__=="__main__":
   # **************************************************************************************
   # compute environment of each atom
   config1_env=ganisetti_tools.compute_each_atom_environment(config1,config1_nnl,atom_type_sym2num,atom_type_num2sym)
-
+  
   for i in given_anions_sym2num.keys():
     output1=open(BASE_FILE+str("_")+str(i)+str("_local_env.data"),'w')
-    output1.write("# %s Environment \t\t\t Number ( Percentage )\n" %(str(i)))
+    output1.write("# %s Environment \t\t\t Number ( %s O atoms )\t\t" %(str(i),str("%")))
+    for j in given_cations_sym2num.keys():
+      output1.write("%s %s-%s bonds \t" %(str("%"),j,i))
+    output1.write("\n")
     for j in config1_env.all_possible_local_env_and_counts.keys():
       if j[0] == i:
         temp1=0
@@ -204,7 +207,16 @@ if __name__=="__main__":
         temp3=config1_env.all_possible_local_env_and_counts[j]
         for num_tabs in range(5-number_of_tabs_for_formatting_in_the_output_file):
           output1.write("\t")
-        output1.write(" => \t%d \t%.2lf \n" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+        # writing the percentage of anions
+        output1.write(" => \t%d \t%.2lf \t\t" %(temp3,temp3*100.0/total_atoms_of_type_sym[i]))
+        # writing the percentage of bonds for each type of atom
+        for temp_cations_in_all_possible_local_env in j:
+            if temp_cations_in_all_possible_local_env[0] not in given_anions_sym2num.keys():
+              #if temp_all_cations == temp_cations_in_all_possible_local_env[0]:
+              temp4=temp_cations_in_all_possible_local_env[0]
+              temp5=temp_cations_in_all_possible_local_env[1]
+              output1.write("%.2lf \t\t" %(temp3*100.0*temp5/(total_atoms_of_type_sym[temp4]*config1_coord.avg_coord_sym[temp4])))
+        output1.write("\n")
 
     output1.close()
   #config1_env.all_possible_local_env_and_counts={(O,(Si,1),(Al,1)):154} # total O which is in Si-O-Al are 154
