@@ -11,6 +11,7 @@ import numpy as np
 import sys
 import itertools
 import datetime
+import time
 import git
 import os
 
@@ -1927,7 +1928,7 @@ class compute_clustered_channels:
 
     # define parameters
     cluster_count = 1
-    all_neighbouring_cells_of_the_given_atoms_original=[]
+    all_neighbouring_cells_of_the_given_atoms=[]
     cluster_id = {}
     self.clusters_position_to_id={}
     self.clusters_id_to_position={}
@@ -1954,33 +1955,107 @@ class compute_clustered_channels:
       self.cellY=int(atom_posy[i]/self.LEC_Y)
       self.cellZ=int(atom_posz[i]/self.LEC_Z)
 
+      # compute neighboring cells of each atom, these cells are also referred as active cells
+      # store them in a list, i.e, all_neighbouring_cells_of_the_given_atoms_original
+      # to avoid working with large data of emty cells
       neighbours1=self.get_neighbour_cells()
       for i in neighbours1:
-        all_neighbouring_cells_of_the_given_atoms_original.append(i)
-    all_neighbouring_cells_of_the_given_atoms=all_neighbouring_cells_of_the_given_atoms_original  # keep the list for safe side
+      	if i not in all_neighbouring_cells_of_the_given_atoms:
+          all_neighbouring_cells_of_the_given_atoms.append(i)
+    #all_neighbouring_cells_of_the_given_atoms=list(set(all_neighbouring_cells_of_the_given_atoms))
+    # keep the list on a safe side
     print("total active cells = %d " %(len(all_neighbouring_cells_of_the_given_atoms)))
 
-    for i in all_neighbouring_cells_of_the_given_atoms_original:
-      self.cellX=i[0]
-      self.cellY=i[1]
-      self.cellZ=i[2]
+    # initializing a dictinary for storing the active cell neighbors of all active cells 
+    for i in all_neighbouring_cells_of_the_given_atoms:
       temp1={i:[]}
       active_cell_neighbours.update(temp1)
+    start_time1=time.time()
+    # for each active cell store the neighbors of only the active cells
 
-    for i in all_neighbouring_cells_of_the_given_atoms_original:   # i = (ix,iy,iz) = cell position
+    for i in all_neighbouring_cells_of_the_given_atoms:   # i = (ix,iy,iz) = cell position
       self.cellX=i[0]
       self.cellY=i[1]
       self.cellZ=i[2]
       neighbours1=self.get_neighbour_cells()
       neighbours1.remove(i)                                   # remove the own cell
       for j in neighbours1:
-        if j in all_neighbouring_cells_of_the_given_atoms_original:
+        if j in all_neighbouring_cells_of_the_given_atoms:
           temp1=active_cell_neighbours[i]
           temp1.append(j)
-          temp2={i:temp1}
-          active_cell_neighbours.update(temp2)
+          temp2=list(set(temp1))
+          temp3={i:temp2}
+          active_cell_neighbours.update(temp3)		#active_cell_neighbors[(x1,y1,z1)]=[(x2,y2,z2),(x3,y3,z3)]
+    end_time1=time.time()
+    print("store active cells finished; time taken = %s " %(str(datetime.timedelta(seconds=end_time1-start_time1))))
 
     # main loop to find the clusters
+    all_unclustered_cells=all_neighbouring_cells_of_the_given_atoms
+    while len(all_unclustered_cells) != 0:
+      collected_cells_of_the_cluster={}
+      temp1={all_unclustered_cells[0]:1}
+      collected_cells_of_the_cluster.update(temp1)
+      while len(collected_cells_of_the_cluster) !=0 :
+      	the_cell_of_the_cluster=list(collected_cells_of_the_cluster.keys())[0]
+      	#print("%d ==> %s" %(cluster_count,str(the_cell_of_the_cluster)))
+      	#if the_cell_of_the_cluster == "(15, 15, 44)":
+      	#print(collected_cells_of_the_cluster)
+      	temp1={the_cell_of_the_cluster:cluster_count}
+      	cluster_id.update(temp1)
+      	all_unclustered_cells.remove(the_cell_of_the_cluster)
+      	collected_cells_of_the_cluster.pop(the_cell_of_the_cluster)
+      	for the_neighbour_of_the_cell_of_the_cluster in active_cell_neighbours[the_cell_of_the_cluster]:
+      	  #print("%d ==> ==> %s" %(cluster_count,str(the_neighbour_of_the_cell_of_the_cluster)))
+      	  temp1={the_neighbour_of_the_cell_of_the_cluster:1}
+      	  collected_cells_of_the_cluster.update(temp1)
+      	temp1=active_cell_neighbours[the_cell_of_the_cluster]
+      	temp1.append(the_cell_of_the_cluster)
+      	for pair in list(itertools.combinations(temp1,2)):
+      	  try:
+      	    active_cell_neighbours[pair[0]].remove(pair[1])
+      	    active_cell_neighbours[pair[1]].remove(pair[0])
+      	  except:
+      	    pass
+      cluster_count=cluster_count+1
+
+    '''
+    while len(all_unclustered_cells) != 0:						# this loop repeats for each cluster
+      first_cell_of_the_cluster=all_unclustered_cells[0]
+      temp1={first_cell_of_the_cluster:cluster_count}
+      cluster_id.update(temp1)
+      all_unclustered_cells.remove(first_cell_of_the_cluster)	# remove the cell from the list of all unclustered cells if the cell is given with a channel id
+      cluster1=[]
+      for first_cell_neighbour in active_cell_neighbours[first_cell_of_the_cluster]:
+      	active_cell_neighbours[first_cell_neighbour].remove(first_cell_of_the_cluster)
+        cluster1.update(first_cell_neighbour)
+      while len(cluster1) != 0:									# this loop repeats for each cell of a cluster
+      	next_cell_of_the_cluster=cluster1[0]
+      	temp1={next_cell_of_the_cluster:cluster_count}
+      	cluster_id.update(temp1)
+      	all_unclustered_cells.remove(next_cell_of_the_cluster)
+      	cluster1.remove(next_cell_of_the_cluster)
+      	for next_cell_neighbour in active_cell_neighbours[next_cell_of_the_cluster]:
+      	  active_cell_neighbours[next_cell_neighbour].remove(next_cell_of_the_cluster)
+      	  cluster1.update(next_cell_neighbour)
+    '''
+    '''
+    while len(all_unclustered_cells) != 0:
+      collected_cells_of_the_cluster=[]
+      collected_cells_of_the_cluster.append(all_unclustered_cells[0])
+      while len(collected_cells_of_the_cluster) !=0 :
+      	the_cell_of_the_cluster=collected_cells_of_the_cluster[0]
+      	temp1={the_cell_of_the_cluster:cluster_count}
+      	cluster_id.update(temp1)
+      	print(the_cell_of_the_cluster)
+      	all_unclustered_cells.remove(the_cell_of_the_cluster)
+      	collected_cells_of_the_cluster.remove(the_cell_of_the_cluster)
+      	for the_neighbour_of_the_cell_of_the_cluster in active_cell_neighbours[the_cell_of_the_cluster]:
+      	  active_cell_neighbours[the_neighbour_of_the_cell_of_the_cluster].remove(the_cell_of_the_cluster)
+      	  collected_cells_of_the_cluster.append(the_neighbour_of_the_cell_of_the_cluster)
+      cluster_count=cluster_count+1
+    '''
+
+    '''
     for i in all_neighbouring_cells_of_the_given_atoms:		# i = (ix,iy,iz) = cell position
       temp1={i:cluster_count}
       cluster_id.update(temp1)
@@ -2015,12 +2090,13 @@ class compute_clustered_channels:
       #finished_searching_cells_of_one_complete_cluster="yes"
       print("finished cluster: %d" %(cluster_count))
       cluster_count =cluster_count+1
+    '''
     for i in range(cluster_count-1):
       temp1={i+1:[]}
       self.clusters_id_to_position.update(temp1)
 
     for i in cluster_id.keys():
-      temp1=(i[0]*self.LEC_X, i[1]*self.LEC_Y, i[2]*self.LEC_Z)
+      temp1=(i[0]*self.LEC_X, i[1]*self.LEC_Y, i[2]*self.LEC_Z)		# i=cell id; i*LEC become cell position
       temp2={temp1:cluster_id[i]}
       self.clusters_position_to_id.update(temp2)
       temp2=self.clusters_id_to_position[cluster_id[i]]
