@@ -68,11 +68,15 @@ if __name__=="__main__":
 
   # compute voxel based atoms density
   all_clustering_required_atoms=[1759,586,383,524,237,2649,363,465,93,1868]
-  #for i in config1.id:
-  #  if config1.type[i] == atom_type_sym2num["P"]:
-  #    all_clustering_required_atoms.append(i)
+  '''
+  all_clustering_required_atoms=[]
+  for i in config1.id:
+    if config1.type[i] == atom_type_sym2num["Na"]:
+      all_clustering_required_atoms.append(i)
+  '''
+  print("total Na atoms = %d " %(len(all_clustering_required_atoms)))
   
-  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,0.5,5,all_clustering_required_atoms)
+  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,0.5,3,all_clustering_required_atoms)
   
 
   output1=open(BASE_FILE+str("_clusters.atoms"),'w')

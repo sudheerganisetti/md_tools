@@ -1931,6 +1931,7 @@ class compute_clustered_channels:
     cluster_id = {}
     self.clusters_position_to_id={}
     self.clusters_id_to_position={}
+    active_cell_neighbours={}
 
     # store atom positions locally
     atom_posx=config.posx
@@ -1957,19 +1958,62 @@ class compute_clustered_channels:
       for i in neighbours1:
         all_neighbouring_cells_of_the_given_atoms_original.append(i)
     all_neighbouring_cells_of_the_given_atoms=all_neighbouring_cells_of_the_given_atoms_original  # keep the list for safe side
-    for i in all_neighbouring_cells_of_the_given_atoms:
-      temp1={i:cluster_count}
-      cluster_id.update(temp1)
-      all_neighbouring_cells_of_the_given_atoms.remove(i)   # remove the entry from dictionary
+    print("total active cells = %d " %(len(all_neighbouring_cells_of_the_given_atoms)))
+
+    for i in all_neighbouring_cells_of_the_given_atoms_original:
       self.cellX=i[0]
       self.cellY=i[1]
       self.cellZ=i[2]
-      neighbour_cells_of_cell_i=self.get_neighbour_cells()
-      for j in neighbour_cells_of_cell_i:
-        if j in all_neighbouring_cells_of_the_given_atoms:
-          temp1={j:cluster_count}
-          cluster_id.update(temp1)
-          all_neighbouring_cells_of_the_given_atoms.remove(j)   # remove the entry from dictionary
+      temp1={i:[]}
+      active_cell_neighbours.update(temp1)
+
+    for i in all_neighbouring_cells_of_the_given_atoms_original:   # i = (ix,iy,iz) = cell position
+      self.cellX=i[0]
+      self.cellY=i[1]
+      self.cellZ=i[2]
+      neighbours1=self.get_neighbour_cells()
+      neighbours1.remove(i)                                   # remove the own cell
+      for j in neighbours1:
+        if j in all_neighbouring_cells_of_the_given_atoms_original:
+          temp1=active_cell_neighbours[i]
+          temp1.append(j)
+          temp2={i:temp1}
+          active_cell_neighbours.update(temp2)
+
+    # main loop to find the clusters
+    for i in all_neighbouring_cells_of_the_given_atoms:		# i = (ix,iy,iz) = cell position
+      temp1={i:cluster_count}
+      cluster_id.update(temp1)
+      all_neighbouring_cells_of_the_given_atoms.remove(i)   # remove the entry from the list
+
+      cluster1=[]
+      #cells_that_are_already_accounted_in_cluster1=[]
+      cluster1.append(i)
+      for m in active_cell_neighbours[i]:
+        active_cell_neighbours[m].remove(i)
+      #finished_searching_cells_of_one_complete_cluster="no"
+      #while finished_searching_cells_of_one_complete_cluster == "no":
+      for j in cluster1:
+          #self.cellX=j[0]
+          #self.cellY=j[1]
+          #self.cellZ=j[2]
+          #neighbour_cells_of_cell_j=self.get_neighbour_cells()	# the output is a list = [(x1,y1,z1),(x2,y2,z2),(x3,y3,z3)]
+          #cells_that_are_already_accounted_in_cluster1.append(j)
+          neighbour_cells_of_cell_j=active_cell_neighbours[j]
+          for k in neighbour_cells_of_cell_j:
+            print("==> %s" %(str(k)))
+            if k in all_neighbouring_cells_of_the_given_atoms:
+              print("==>  ==> %s" %(str(k)))
+              temp1={k:cluster_count}
+              cluster_id.update(temp1)
+              all_neighbouring_cells_of_the_given_atoms.remove(k)   # remove the entry from the list
+              #if k not in cells_that_are_already_accounted_in_cluster1:
+              for m in active_cell_neighbours[k]:
+                active_cell_neighbours[m].remove(k)
+              cluster1.append(k)
+          print("j = %s" %(str(j)))
+      #finished_searching_cells_of_one_complete_cluster="yes"
+      print("finished cluster: %d" %(cluster_count))
       cluster_count =cluster_count+1
     for i in range(cluster_count-1):
       temp1={i+1:[]}
@@ -1989,6 +2033,7 @@ class compute_clustered_channels:
       # get all surrounding 'vox_smooth' number of voxels 
       for ix in range(self.cellX-self.vox_smooth,self.cellX+self.vox_smooth+1):
         raw_ix=ix-self.cellX
+        temp1=ix-self.cellX
         # Dealing with periodic boundary conditions
         if ix < 0:
           ix = self.MaxCells_X+ix
@@ -1997,6 +2042,7 @@ class compute_clustered_channels:
 
         for iy in range(self.cellY-self.vox_smooth,self.cellY+self.vox_smooth+1):
           raw_iy=iy-self.cellY
+          temp2=iy-self.cellY
           # Dealing with periodic boundary conditions
           if iy < 0:
             iy = self.MaxCells_Y + iy
@@ -2005,11 +2051,14 @@ class compute_clustered_channels:
 
           for iz in range(self.cellZ-self.vox_smooth,self.cellZ+self.vox_smooth+1):
             raw_iz=iz-self.cellZ
+            temp3=iz-self.cellZ
             # Dealing with periodic boundary conditions
             if iz < 0:
               iz = self.MaxCells_Z + iz
             if iz >= self.MaxCells_Z:
               iz = iz - self.MaxCells_Z
-
-            all_neighbour_cells.append((ix,iy,iz))
+            #print(temp1*self.LEC_X,temp2*self.LEC_Y,temp3*self.LEC_Z,pow(temp1*self.LEC_X,2)+pow(temp2*self.LEC_Y,2)+pow(temp3*self.LEC_Z,2),self.LEC_X*self.LEC_Y*self.LEC*pow(self.rcut,3))
+            #print(temp1,temp2,temp3)
+            if (pow(temp1,2)+pow(temp2,2)+pow(temp3,2)) < pow(self.vox_smooth,2):
+              all_neighbour_cells.append((ix,iy,iz))
       return all_neighbour_cells
