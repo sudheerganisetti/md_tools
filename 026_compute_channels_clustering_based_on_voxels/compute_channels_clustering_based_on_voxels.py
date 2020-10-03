@@ -68,25 +68,39 @@ if __name__=="__main__":
   if file_format == "lammps":
     config1 = ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
 
-  # compute voxel based atoms density
-  #all_clustering_required_atoms=[1759,586,383,524,237,2649,363,465,93,1868]
+
+  # **************************************************************************************
+  # compute total atoms of each atom type
+  total_atoms_of_type_sym={}
+  tmp=config1.type.values()
+  tmp=list(tmp)
+  for i in atom_type_sym2num.keys():
+    total_atoms_of_type_sym[i]=tmp.count(atom_type_sym2num[i])
+
+  # **************************************************************************************
+  # computing nnl
+  config1_nnl   = ganisetti_tools.compute_nnl(config1,rc,atom_type_num2sym)
   
+  #all_clustering_required_atoms=[1759,586,383,524,237,2649,363,465,93,1868]
   all_clustering_required_atoms=[]
   for i in config1.id:
     if config1.type[i] == atom_type_sym2num["Na"]:
       all_clustering_required_atoms.append(i)
+      for j in config1_nnl.nnl[i]:
+        all_clustering_required_atoms.append(j)
   
   print("total Na atoms = %d " %(len(all_clustering_required_atoms)))
   
-  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,0.8,5,all_clustering_required_atoms)
+  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,config1_nnl.nnl,0.8,5,all_clustering_required_atoms)
   
-
   output1=open(BASE_FILE+str("_clusters.atoms"),'w')
   ganisetti_tools.write_imd_header_custom_property(output1,config1.box,"cluster_id")
   count=1
-  for i,j,k in config1_Na_channels.clusters_position_to_id.keys():
-    output1.write("%d 1 %.4lf %.4lf %.4lf %d\n" %(count,float(i),float(j),float(k),config1_Na_channels.clusters_position_to_id[(i,j,k)]))
+  
+  for i,j,k in config1_Na_channels.cluster_cells_position_to_id.keys():
+    output1.write("%d 1 %.4lf %.4lf %.4lf %d\n" %(count,float(i),float(j),float(k),config1_Na_channels.cluster_cells_position_to_id[(i,j,k)]))
     count=count+1
   output1.close()
+  
 end_time=time.time()
 print("Total excution time = %s" %(str(datetime.timedelta(seconds=end_time-start_time))))

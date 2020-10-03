@@ -1896,13 +1896,13 @@ class compute_atoms_density:
 
     self.atoms_density = temp2_atoms_density
           
-class compute_clustered_channels:
+class compute_clustered_channels_based_on_voxels:
   """
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   * This is my own idea: -- Sudheer
   * Compute the channels by clustering (grouping) the given atoms
   *
-  * usage: config1=ganisetti_tools.compute_clustered_channels(config,voxel_length,voxels_count_for_smoothing,given_atom_ids,atom_type_num2sym)
+  * usage: config1=ganisetti_tools.compute_clustered_channels(config,voxel_length,voxels_count_for_smoothing,given_atom_ids)
   * where config    = ganisetti_tools.get_atoms_info_from_lammps(01.dump)
   *       voxel_length = 2.5/5
   *       voxels_count_for_smoothing = 3
@@ -2097,6 +2097,148 @@ class compute_clustered_channels:
       temp2.append(temp1)
       temp3={cluster_id[i]:temp2}
       self.clusters_id_to_position.update(temp3)
+
+  def get_neighbour_cells(self):
+      all_neighbour_cells=[]
+      # get all surrounding 'vox_smooth' number of voxels 
+      for ix in range(self.cellX-self.vox_smooth,self.cellX+self.vox_smooth+1):
+        raw_ix=ix-self.cellX
+        temp1=ix-self.cellX
+        # Dealing with periodic boundary conditions
+        if ix < 0:
+          ix = self.MaxCells_X+ix
+        if ix >= self.MaxCells_X:
+          ix = ix - self.MaxCells_X
+
+        for iy in range(self.cellY-self.vox_smooth,self.cellY+self.vox_smooth+1):
+          raw_iy=iy-self.cellY
+          temp2=iy-self.cellY
+          # Dealing with periodic boundary conditions
+          if iy < 0:
+            iy = self.MaxCells_Y + iy
+          if iy >= self.MaxCells_Y:
+            iy = iy - self.MaxCells_Y
+
+          for iz in range(self.cellZ-self.vox_smooth,self.cellZ+self.vox_smooth+1):
+            raw_iz=iz-self.cellZ
+            temp3=iz-self.cellZ
+            # Dealing with periodic boundary conditions
+            if iz < 0:
+              iz = self.MaxCells_Z + iz
+            if iz >= self.MaxCells_Z:
+              iz = iz - self.MaxCells_Z
+            #print(temp1*self.LEC_X,temp2*self.LEC_Y,temp3*self.LEC_Z,pow(temp1*self.LEC_X,2)+pow(temp2*self.LEC_Y,2)+pow(temp3*self.LEC_Z,2),self.LEC_X*self.LEC_Y*self.LEC*pow(self.rcut,3))
+            #print(temp1,temp2,temp3)
+            if (pow(temp1,2)+pow(temp2,2)+pow(temp3,2)) < pow(self.vox_smooth,2):
+              all_neighbour_cells.append((ix,iy,iz))
+      return all_neighbour_cells
+
+
+class compute_clustered_channels:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * This is my own idea: -- Sudheer
+  * Compute the channels by clustering (grouping) the given atoms
+  *
+  * usage: config1=ganisetti_tools.compute_clustered_channels(config,config_nnl,voxel_length,voxels_count_for_smoothing,given_atom_ids)
+  * where config    = ganisetti_tools.get_atoms_info_from_lammps(01.dump)
+  *       voxel_length = 2.5/5
+  *       voxels_count_for_smoothing = 3
+  *       atom_type_num2sym = {"1":"O", "2":"Si", "3":"Al", etc,.}
+  *
+  * output: config1.channels
+  * 
+  * HURRAY!, THIS IS WORKING AS I EXPECTED
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,config,config_nnl,rcut,vox_smooth,given_atoms):
+
+    # some initializations
+    all_unclustered_atoms={}
+    cluster_id={}
+    cluster_count=1
+    clusters_id_to_position={}
+    clusters_position_to_id={}
+    config_nnl_of_given_atoms={}
+    self.cluster_cells_id_to_position={}
+    self.cluster_cells_position_to_id={}
+
+    for i in given_atoms:
+      temp1={i:1}
+      all_unclustered_atoms.update(temp1)
+      temp1=[]
+      for j in config_nnl[i]:
+        if j in given_atoms:
+          temp1.append(j)
+      temp2={i:temp1}
+      config_nnl_of_given_atoms.update(temp2)
+
+    # main loop for identifying the clusters
+    while len(all_unclustered_atoms) != 0:
+      collected_atoms_of_the_cluster={}
+      temp1={list(all_unclustered_atoms.keys())[0]:1}
+      collected_atoms_of_the_cluster.update(temp1)
+      while len(collected_atoms_of_the_cluster) != 0:
+        current_atom_of_the_cluster=list(collected_atoms_of_the_cluster.keys())[0]
+        temp1={current_atom_of_the_cluster:cluster_count}
+        cluster_id.update(temp1)
+        all_unclustered_atoms.pop(current_atom_of_the_cluster)
+        collected_atoms_of_the_cluster.pop(current_atom_of_the_cluster)
+        for neighbour_of_current_atom_of_the_cluster in config_nnl_of_given_atoms[current_atom_of_the_cluster]:
+      	  temp1={neighbour_of_current_atom_of_the_cluster:1}
+      	  collected_atoms_of_the_cluster.update(temp1)
+        temp1=config_nnl[current_atom_of_the_cluster]
+        temp1.append(current_atom_of_the_cluster)
+        for pair in list(itertools.combinations(temp1,2)):
+          try:
+            config_nnl_of_given_atoms[pair[0]].remove(pair[1])
+          except:
+      	    pass
+          try:
+            config_nnl_of_given_atoms[pair[1]].remove(pair[0])
+          except:
+            pass
+      cluster_count=cluster_count+1
+
+    # now descritize the sample into voxels so that it looks nicer for visualization
+    self.vox_smooth=vox_smooth
+    # Devide the box into voxels
+    self.MaxCells_X=int(config.box_xx/rcut)
+    self.MaxCells_Y=int(config.box_yy/rcut)
+    self.MaxCells_Z=int(config.box_zz/rcut)
+
+    # LEC= Length of Each Cell
+    self.LEC_X=float(config.box_xx/self.MaxCells_X)
+    self.LEC_Y=float(config.box_yy/self.MaxCells_Y)
+    self.LEC_Z=float(config.box_zz/self.MaxCells_Z)
+
+    # store atom positions locally
+    atom_posx=config.posx
+    atom_posy=config.posy
+    atom_posz=config.posz
+    # move the box to center and correspondingly atoms if the corner of the box is not at center
+    for i in given_atoms:
+      atom_posx[i]=config.posx[i]-config.box[0][0]
+      atom_posy[i]=config.posy[i]-config.box[1][0]
+      atom_posz[i]=config.posz[i]-config.box[2][0]
+      # If the atoms are outside of the box then bring them into other side according to PBC
+      if atom_posx[i] >= config.box_xx:
+        atom_posx[i]=atom_posx[i]-config.box_xx
+      if atom_posy[i] >= config.box_yy:
+        atom_posy[i]=atom_posy[i]-config.box_yy
+      if atom_posz[i] >= config.box_zz:
+        atom_posz[i]=atom_posz[i]-config.box_zz
+      #assign the atoms into respective cell number  #assign the atoms into respective cell number; cell numbers starts with 0
+      self.cellX=int(atom_posx[i]/self.LEC_X)
+      self.cellY=int(atom_posy[i]/self.LEC_Y)
+      self.cellZ=int(atom_posz[i]/self.LEC_Z)
+
+      # compute neighboring cells of each atom
+      neighbours1=self.get_neighbour_cells()
+      for j in neighbours1:
+        temp1={(j[0]*self.LEC_X,j[1]*self.LEC_Y,j[2]*self.LEC_Z):cluster_id[i]}
+        self.cluster_cells_position_to_id.update(temp1)
+
 
   def get_neighbour_cells(self):
       all_neighbour_cells=[]
