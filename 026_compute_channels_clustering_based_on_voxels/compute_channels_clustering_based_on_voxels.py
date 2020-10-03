@@ -69,16 +69,16 @@ if __name__=="__main__":
     config1 = ganisetti_tools.get_atoms_info_from_lammps(LAMMPS_DUMP_FILE)
 
   # compute voxel based atoms density
-  all_clustering_required_atoms=[1759,586,383,524,237,2649,363,465,93,1868]
-  '''
+  #all_clustering_required_atoms=[1759,586,383,524,237,2649,363,465,93,1868]
+  
   all_clustering_required_atoms=[]
   for i in config1.id:
     if config1.type[i] == atom_type_sym2num["Na"]:
       all_clustering_required_atoms.append(i)
-  '''
+  
   print("total Na atoms = %d " %(len(all_clustering_required_atoms)))
   
-  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,0.5,5,all_clustering_required_atoms)
+  config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,0.8,5,all_clustering_required_atoms)
   
 
   output1=open(BASE_FILE+str("_clusters.atoms"),'w')

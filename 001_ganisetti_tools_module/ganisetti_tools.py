@@ -1962,8 +1962,6 @@ class compute_clustered_channels:
       for i in neighbours1:
       	if i not in all_neighbouring_cells_of_the_given_atoms:
           all_neighbouring_cells_of_the_given_atoms.append(i)
-    #all_neighbouring_cells_of_the_given_atoms=list(set(all_neighbouring_cells_of_the_given_atoms))
-    # keep the list on a safe side
     print("total active cells = %d " %(len(all_neighbouring_cells_of_the_given_atoms)))
 
     # initializing a dictinary for storing the active cell neighbors of all active cells 
@@ -1971,8 +1969,8 @@ class compute_clustered_channels:
       temp1={i:[]}
       active_cell_neighbours.update(temp1)
     start_time1=time.time()
-    # for each active cell store the neighbors of only the active cells
 
+    # for each active cell store the neighbors of only the active cells
     for i in all_neighbouring_cells_of_the_given_atoms:   # i = (ix,iy,iz) = cell position
       self.cellX=i[0]
       self.cellY=i[1]
@@ -1987,7 +1985,7 @@ class compute_clustered_channels:
           temp3={i:temp2}
           active_cell_neighbours.update(temp3)		#active_cell_neighbors[(x1,y1,z1)]=[(x2,y2,z2),(x3,y3,z3)]
     end_time1=time.time()
-    print("store active cells finished; time taken = %s " %(str(datetime.timedelta(seconds=end_time1-start_time1))))
+    print("storing active cells is finished; time taken = %s " %(str(datetime.timedelta(seconds=end_time1-start_time1))))
 
     # main loop to find the clusters
     all_unclustered_cells=all_neighbouring_cells_of_the_given_atoms
@@ -1997,15 +1995,11 @@ class compute_clustered_channels:
       collected_cells_of_the_cluster.update(temp1)
       while len(collected_cells_of_the_cluster) !=0 :
       	the_cell_of_the_cluster=list(collected_cells_of_the_cluster.keys())[0]
-      	#print("%d ==> %s" %(cluster_count,str(the_cell_of_the_cluster)))
-      	#if the_cell_of_the_cluster == "(15, 15, 44)":
-      	#print(collected_cells_of_the_cluster)
       	temp1={the_cell_of_the_cluster:cluster_count}
       	cluster_id.update(temp1)
       	all_unclustered_cells.remove(the_cell_of_the_cluster)
       	collected_cells_of_the_cluster.pop(the_cell_of_the_cluster)
       	for the_neighbour_of_the_cell_of_the_cluster in active_cell_neighbours[the_cell_of_the_cluster]:
-      	  #print("%d ==> ==> %s" %(cluster_count,str(the_neighbour_of_the_cell_of_the_cluster)))
       	  temp1={the_neighbour_of_the_cell_of_the_cluster:1}
       	  collected_cells_of_the_cluster.update(temp1)
       	temp1=active_cell_neighbours[the_cell_of_the_cluster]
