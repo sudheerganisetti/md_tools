@@ -88,15 +88,22 @@ if __name__=="__main__":
       all_clustering_required_atoms.append(i)
       for j in config1_nnl.nnl[i]:
         all_clustering_required_atoms.append(j)
+  all_clustering_required_atoms=list(set(all_clustering_required_atoms))
   
   print("total Na atoms = %d " %(len(all_clustering_required_atoms)))
   
   config1_Na_channels=ganisetti_tools.compute_clustered_channels(config1,config1_nnl.nnl,0.8,5,all_clustering_required_atoms)
   
-  output1=open(BASE_FILE+str("_clusters.atoms"),'w')
+  output1=open(BASE_FILE+str("_cluster_atoms.atoms"),'w')
+  ganisetti_tools.write_imd_header_custom_property(output1,config1.box,"cluster_id")
+  for i in config1_Na_channels.cluster_atoms_id_to_cluster_id.keys():
+    output1.write("%d  %d  %.4lf  %.4lf  %.4lf  %d\n" %(i,config1.type[i],config1.posx[i],config1.posy[i],config1.posz[i],config1_Na_channels.cluster_atoms_id_to_cluster_id[i]))
+  output1.close()
+
+  output1=open(BASE_FILE+str("_cluster_voxels.atoms"),'w')
   ganisetti_tools.write_imd_header_custom_property(output1,config1.box,"cluster_id")
   count=1
-  
+
   for i,j,k in config1_Na_channels.cluster_cells_position_to_id.keys():
     output1.write("%d 1 %.4lf %.4lf %.4lf %d\n" %(count,float(i),float(j),float(k),config1_Na_channels.cluster_cells_position_to_id[(i,j,k)]))
     count=count+1

@@ -2162,6 +2162,7 @@ class compute_clustered_channels:
     config_nnl_of_given_atoms={}
     self.cluster_cells_id_to_position={}
     self.cluster_cells_position_to_id={}
+    self.cluster_atoms_id_to_cluster_id={}
 
     for i in given_atoms:
       temp1={i:1}
@@ -2199,7 +2200,8 @@ class compute_clustered_channels:
           except:
             pass
       cluster_count=cluster_count+1
-
+    self.cluster_atoms_id_to_cluster_id=cluster_id
+    
     # now descritize the sample into voxels so that it looks nicer for visualization
     self.vox_smooth=vox_smooth
     # Devide the box into voxels
