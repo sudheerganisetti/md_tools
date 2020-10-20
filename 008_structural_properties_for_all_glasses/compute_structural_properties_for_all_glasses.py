@@ -14,8 +14,15 @@ import matplotlib.pyplot as plt
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 if __name__=="__main__":
 
-  # read command line first
-  cmd=ganisetti_tools.read_command_line(sys.argv)
+  
+  cmd1=ganisetti_tools.read_updated_command_line(sys.argv)
+  # read parameter file
+  read_parameter_file=ganisetti_tools.read_parameter_file(sys.argv[1])
+  if read_parameter_file.error_status == "yes":
+    ganisetti_tools.print_error(read_parameter_file.error_messages)
+
+  cmd=ganisetti_tools.read_command_line(read_parameter_file.all_arguments)
+
   if cmd.error != "none":
     sys.exit(0)
   # get the version details
@@ -44,7 +51,7 @@ if __name__=="__main__":
     CMAS_glass="yes"
 
   # main loop starts here
-  BASE_FILE=str(sys.argv[1])
+  BASE_FILE=str(read_parameter_file.all_arguments[1])
   LAMMPS_DUMP_FILE=BASE_FILE+str('.dump')
   MAX_NEIGHBOURS=8
   MAX_ATOM_TYPES=8
@@ -710,5 +717,4 @@ if __name__=="__main__":
           # print(config1_env.env_atomid[i])
     output1.write("%d\t%.2lf" %(temp1,temp1*100.0/config1_coord.individual_coord_sym[("Al",5)]))
     output1.close()
-
 

@@ -1119,7 +1119,7 @@ class read_command_line:
       sudheer_banner()
       print("************************************** S. Ganisetti **************************************")
       print("Error: usage is wrong")
-      print("correct usage is: ./this_program  ChkptFile -O 1 -Si 2 -Al 3 -Ca 4 -Mg 5 -SiO 2.0 -AlO 2.0 -CaO 3.0 -MgO 3.0")
+      print("correct usage is: ./this_program  parameter_file")
       #print("The program is prepared for chemical compositions: SiO2, Al2O3, P2O5, Na2O, CaO and MgO")
       print("This program is prepared for ",end=" ")
       for i in range(len(known_all_atom_types)-2):
@@ -2276,3 +2276,178 @@ class compute_clustered_channels:
             if (pow(temp1,2)+pow(temp2,2)+pow(temp3,2)) < pow(self.vox_smooth,2):
               all_neighbour_cells.append((ix,iy,iz))
       return all_neighbour_cells
+
+
+class read_parameter_file:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Since the complexity of the programme is increasing as the number of properties 
+  * that are calculated are increasing, the parameters which are passing to the 
+  * programme through the command line are now feed through a parameter file
+  *
+  * This class helps to read the parameter file
+  * usage: 
+  *   rpf = ganisetti_tools.read_parameter_file(parameter_file_name)
+  *
+  * output:
+  *   rpf.input_file_format="imd" or "dump"
+  *   rpf.imd_chkpt_file="chkpt_file.chkpt"
+  *   rpf.lammps_dump_file="chkpt_file.dump"
+  *   rpf.error_status = "yes" or "no"
+  *   rpf.error_messages = ["error_message1", "error_message2", etc. ]
+  *   rpf.all_arguments = ["python_script", "chkpt", "-O", "1", -Si", "2", "-SiO", "2.0", etc.]
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,parameter_file1):
+  	parameter_file=open(parameter_file1,'r')
+  	input_file_format="none"
+  	error_status = "no"
+  	error_message = ""
+  	all_arguments=[]
+  	known_atoms=[]
+  	known_atom_pairs=[]
+  	error_messages=[]
+  	all_arguments.append(sys.argv[0])
+
+  	for each_line in parameter_file:
+  		data=each_line.split()
+  		if len(data) != 0 and data[0] != "#":
+  			# read known atoms
+  			if data[0] == "known_atoms":
+  				for i in range(2,len(data)):
+  					known_atoms.append(data[i])
+  				known_atom_pairs1=list( itertools.combinations(known_atoms, 2))
+  				for i,j in known_atom_pairs1:
+  					temp1=str(i)+str(j)
+  					known_atom_pairs.append(temp1)
+  					temp1=str(j)+str(i)
+  					known_atom_pairs.append(temp1)
+
+			# read input file format
+  			if data[0] == "input_file_format":
+  				if len(data) == 3:
+  					input_file_format=data[2]
+  					self.input_file_format=input_file_format
+  				else:
+  					error_status="yes"
+  					error_messages.append("error in parameter file => 'input_file_format' is missing!")
+
+  			# read input file name
+  			if data[0] == "input":
+  				if input_file_format == "none":
+  					error_status= "yes"
+  					error_messages.append("error in parameter file => please specify 'input_file_format' before 'input'")
+  				if len(data) == 3:
+  					all_arguments.append(data[2])
+  					#input_file=dump[2]+str(".")+str(input_file_format)
+  					if input_file_format == "imd":
+  						try:
+  							imd_chkpt_file=data[2]+str(".chkpt")
+  							temp1=open(imd_chkpt_file,'r')
+  							self.imd_chkpt_file=imd_chkpt_file
+  						except:
+  							error_status = "yes"
+  							error_messages.append("error in parameter file => the input '.chkpt' file is missing!")
+  					elif input_file_format == "dump":
+  						try:
+  							lammps_dump_file=data[2]+str(".dump")
+  							temp1=open(lammps_dump_file,'r')
+  							self.lammps_dump_file=lammps_dump_file
+  						except:
+  							error_status = "yes"
+  							error_messages.append("error in parameter file => the input '.dump' file is missing!")
+  				else:
+  					error_status = "yes"
+  					error_messages.append("error in parameter file => 'input' is missing!")
+
+  			# read atom types and cutoff distances
+  			if data[0] in known_atoms:
+  				if len(data) == 3:
+  					all_arguments.append(str("-")+str(data[0]))
+  					all_arguments.append(data[2])
+  			if data[0] in known_atom_pairs:
+  				if len(data) == 3:
+  					all_arguments.append(str("-")+str(data[0]))
+  					all_arguments.append(data[2])
+  	self.all_arguments = all_arguments
+  	self.error_status = error_status
+  	self.error_messages = error_messages
+
+
+class generate_parameter_file_template:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Since the complexity of the programme is increasing as the number of properties 
+  * that are calculated are increasing, the parameters which are passing to the 
+  * programme through the command line are now feed through a parameter file
+  *
+  * This class helps to generate template of parameter file
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self):
+  	output1=open("parameter_file_template.param", 'w')
+  	output1.write("# all known atoms\n")
+  	output1.write("known_atoms = O F Si Al P Na Ca Mg Sr Li K V\n\n")
+  	output1.write("# Known file formats = imd, dump\n")
+  	output1.write("input_file_format = dump\n\n")
+  	output1.write("# chkpt file\n")
+  	output1.write("input = chkpt_file\n\n")
+  	output1.write("# Atom Types\nO = 1\nSi = 2\nAl = 3\nP  = 6\nNa = 7\n\n")
+  	output1.write("# Cutoff Distances\n")
+  	output1.write("SiO = 2.0\nAlO = 2.40\nPO  = 2.00\nNaO = 3.15\n\n")
+
+class read_updated_command_line:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * Since the complexity of the programme is increasing as the number of properties 
+  * that are calculated are increasing, the parameters which are passing to the 
+  * programme through the command line are now feed through a parameter file
+  * 
+  * This class helps to read the command line and check the existance of parameter file
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,sys_argv):
+  	error="no"
+  	if len(sys_argv) == 1 or sys_argv[1] == "-h" or sys_argv[1] == "--help":
+  		error="yes"
+  	elif sys_argv[1] == "-g":
+  		generate_parameter_file_template()
+  		print("The parameter file template is successfully generated")
+  		sys.exit()
+  	else:
+  		try :
+  			temp=open(sys_argv[1],'r')
+  		except:
+  			error="yes"
+  	if error == "yes":
+  		sudheer_banner()
+  		CREDBG = '\33[31m' # \33[41m for red background
+  		CREDBGEND = '\x1b[0m'
+  		print("************************************** S. Ganisetti **************************************")
+  		print("Error: usage is wrong")
+  		print("\nThe correct usage is:")
+  		print("%s   python3  %s  parameter_file  %s" % (CREDBG, str(sys_argv[0]), CREDBGEND))
+  		print("\nIf you do not have the parameter_file then generate the template using the following command:")
+  		print("%s   python3  %s  -g  %s " % (CREDBG, str(sys_argv[0]), CREDBGEND))
+  		print("******************************************************************************************")
+  		sys.exit()
+
+
+def print_error(error_messages):
+	"""
+	* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	* error_messages = ["error_message1", "error_message2", etc. ] 
+	*
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	"""
+	sudheer_banner()
+	CREDBG = '\33[31m' # \33[41m for red background
+	CREDBGEND = '\x1b[0m'
+	print("************************************** S. Ganisetti **************************************\n")
+	for i in error_messages:
+		print("%s   %s  %s" % (CREDBG, str(i), CREDBGEND))
+	print("\n******************************************************************************************")
+	sys.exit()
