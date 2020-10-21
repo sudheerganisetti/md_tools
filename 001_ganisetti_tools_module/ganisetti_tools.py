@@ -2300,79 +2300,116 @@ class read_parameter_file:
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,parameter_file1):
-  	parameter_file=open(parameter_file1,'r')
-  	input_file_format="none"
-  	error_status = "no"
-  	error_message = ""
-  	all_arguments=[]
-  	known_atoms=[]
-  	known_atom_pairs=[]
-  	error_messages=[]
-  	all_arguments.append(sys.argv[0])
+    parameter_file=open(parameter_file1,'r')
+    input_file_format   = "none"
+    error_status        = False
+    error_message       = ""
+    read_bs_parameters  = False
+    cur_file_exists     = False
+    all_arguments       = []
+    known_atoms         = []
+    known_atom_pairs    = []
+    error_messages      = []
+    all_arguments.append(sys.argv[0])
 
-  	for each_line in parameter_file:
-  		data=each_line.split()
-  		if len(data) != 0 and data[0] != "#":
-  			# read known atoms
-  			if data[0] == "known_atoms":
-  				for i in range(2,len(data)):
-  					known_atoms.append(data[i])
-  				known_atom_pairs1=list( itertools.combinations(known_atoms, 2))
-  				for i,j in known_atom_pairs1:
-  					temp1=str(i)+str(j)
-  					known_atom_pairs.append(temp1)
-  					temp1=str(j)+str(i)
-  					known_atom_pairs.append(temp1)
+    for each_line in parameter_file:
+      data=each_line.split()
+      if len(data) != 0 and data[0] != "#":
+        # read known atoms
+        if data[0] == "known_atoms":
+          for i in range(2,len(data)):
+            known_atoms.append(data[i])
+          known_atom_pairs1=list( itertools.combinations(known_atoms, 2))
+          for i,j in known_atom_pairs1:
+            temp1=str(i)+str(j)
+            known_atom_pairs.append(temp1)
+            temp1=str(j)+str(i)
+            known_atom_pairs.append(temp1)
 
-			# read input file format
-  			if data[0] == "input_file_format":
-  				if len(data) == 3:
-  					input_file_format=data[2]
-  					self.input_file_format=input_file_format
-  				else:
-  					error_status="yes"
-  					error_messages.append("error in parameter file => 'input_file_format' is missing!")
+        # read input file format
+        if data[0] == "input_file_format":
+          if len(data) == 3:
+            input_file_format=data[2]
+            self.input_file_format=input_file_format
+          else:
+            error_status=True
+            error_messages.append("error in parameter file => 'input_file_format' is missing!")
 
-  			# read input file name
-  			if data[0] == "input":
-  				if input_file_format == "none":
-  					error_status= "yes"
-  					error_messages.append("error in parameter file => please specify 'input_file_format' before 'input'")
-  				if len(data) == 3:
-  					all_arguments.append(data[2])
-  					#input_file=dump[2]+str(".")+str(input_file_format)
-  					if input_file_format == "imd":
-  						try:
-  							imd_chkpt_file=data[2]+str(".chkpt")
-  							temp1=open(imd_chkpt_file,'r')
-  							self.imd_chkpt_file=imd_chkpt_file
-  						except:
-  							error_status = "yes"
-  							error_messages.append("error in parameter file => the input '.chkpt' file is missing!")
-  					elif input_file_format == "dump":
-  						try:
-  							lammps_dump_file=data[2]+str(".dump")
-  							temp1=open(lammps_dump_file,'r')
-  							self.lammps_dump_file=lammps_dump_file
-  						except:
-  							error_status = "yes"
-  							error_messages.append("error in parameter file => the input '.dump' file is missing!")
-  				else:
-  					error_status = "yes"
-  					error_messages.append("error in parameter file => 'input' is missing!")
+        # read input file name
+        if data[0] == "input":
+          if input_file_format == "none":
+            error_status= True
+            error_messages.append("error in parameter file => please specify 'input_file_format' before 'input'")
+          if len(data) == 3:
+            all_arguments.append(data[2])
+            self.input_file=data[2]
+            #input_file=dump[2]+str(".")+str(input_file_format)
+            if input_file_format == "imd":
+              try:
+                imd_chkpt_file=data[2]+str(".chkpt")
+                temp1=open(imd_chkpt_file,'r')
+                self.input_imd_chkpt_file=imd_chkpt_file
+              except:
+                error_status = True
+                error_messages.append("error in parameter file => the input '.chkpt' file is missing!")
+            elif input_file_format == "dump":
+              try:
+                lammps_dump_file=data[2]+str(".dump")
+                temp1=open(lammps_dump_file,'r')
+                self.input_lammps_dump_file=lammps_dump_file
+              except:
+                error_status = True
+                error_messages.append("error in parameter file => the input '.dump' file is missing!")
+          else:
+            error_status = True
+            error_messages.append("error in parameter file => 'input' is missing!")
 
-  			# read atom types and cutoff distances
-  			if data[0] in known_atoms:
-  				if len(data) == 3:
-  					all_arguments.append(str("-")+str(data[0]))
-  					all_arguments.append(data[2])
-  			if data[0] in known_atom_pairs:
-  				if len(data) == 3:
-  					all_arguments.append(str("-")+str(data[0]))
-  					all_arguments.append(data[2])
-  	self.all_arguments = all_arguments
-  	self.error_status = error_status
-  	self.error_messages = error_messages
+        # read atom types and cutoff distances
+        if data[0] in known_atoms:
+          if len(data) == 3:
+            all_arguments.append(str("-")+str(data[0]))
+            all_arguments.append(data[2])
+        if data[0] in known_atom_pairs:
+          if len(data) == 3:
+            all_arguments.append(str("-")+str(data[0]))
+            all_arguments.append(data[2])
+
+        # read keywords for computing bond statistics
+        if data[0] == "compute_bs" and (data[2]).upper() == 'TRUE':
+          read_bs_parameters = True
+        if read_bs_parameters == True:
+          if data[0] == "bs_cur_file":
+            if len(data) == 3:
+              cur_file=data[2]
+              self.cur_file=cur_file
+              try :
+                if input_file_format == "imd":
+                  cur_file1=cur_file+str(".chkpt")
+                  open(cur_file1,'r')
+                  cur_file_exists=True
+                  self.cur_imd_chkpt_file=cur_file1
+                elif input_file_format == "dump":
+                  cur_file1=cur_file+str(".dump")
+                  open(cur_file1,'r')
+                  cur_file_exists=True
+                  self.cur_lammps_dump_file=cur_file1
+                else:
+                  error_status=True
+                  error_messages.append("error in parameter file => 'input_file_format' is missing")
+              except:
+                error_status=True
+                error_messages.append("error in parameter file => the file %s does not exist!" %(cur_file1))
+            else:
+              error_status=True
+              error_messages.append("error in parameter file => 'bs_cur_file' is missing!")
+    if read_bs_parameters == True and cur_file_exists == False:
+      error_status=True
+      error_messages.append("error in parameter file => 'bs_cur_file' is missing!\n   bs_cur_file is needed inorder to compute bond statistics\n \
+  if you do not want to compute bond statistics then use compute_bs = False in the parameter file")
+
+    self.all_arguments = all_arguments
+    self.error_status = error_status
+    self.error_messages = error_messages
 
 
 class generate_parameter_file_template:
@@ -2387,16 +2424,25 @@ class generate_parameter_file_template:
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self):
-  	output1=open("parameter_file_template.param", 'w')
-  	output1.write("# all known atoms\n")
-  	output1.write("known_atoms = O F Si Al P Na Ca Mg Sr Li K V\n\n")
-  	output1.write("# Known file formats = imd, dump\n")
-  	output1.write("input_file_format = dump\n\n")
-  	output1.write("# chkpt file\n")
-  	output1.write("input = chkpt_file\n\n")
-  	output1.write("# Atom Types\nO = 1\nSi = 2\nAl = 3\nP  = 6\nNa = 7\n\n")
-  	output1.write("# Cutoff Distances\n")
-  	output1.write("SiO = 2.0\nAlO = 2.40\nPO  = 2.00\nNaO = 3.15\n\n")
+    time_now              = datetime.datetime.now()
+    output1=open("parameter_file_template.param", 'w')
+    output1.write("# Author : Sudheer Ganisetti\n")
+    output1.write("# Date   : %s \n" %(time_now))
+    output1.write("# Info   : the parameter file can be used to pass the arguments to the python program upon calling 'ganisetti_tools' module\n")
+    output1.write("           for computing a variety of properties of various glasses prepared with the molecular dynamics simulations\n\n")
+    output1.write("# all known atoms\n")
+    output1.write("known_atoms = O F Si Al P Na Ca Mg Sr Li K V\n\n")
+    output1.write("# Known file formats = imd, dump\n")
+    output1.write("input_file_format = dump\n\n")
+    output1.write("# chkpt file\n")
+    output1.write("input = chkpt_file\n\n")
+    output1.write("# Atom Types\nO = 1\nSi = 2\nAl = 3\nP  = 6\nNa = 7\n\n")
+    output1.write("# Cutoff Distances\n")
+    output1.write("SiO = 2.0\nAlO = 2.40\nPO  = 2.00\nNaO = 3.15\n\n")
+    output1.write("# bond_statistics\n# compute_bs = True or False\n")
+    output1.write("# bs_ref_file = the 'input' file ; bs_cur_file = current file\n")
+    output1.write("compute_bs = True\n")
+    output1.write("bs_cur_file = current_chkpt_file\n\n")
 
 class read_updated_command_line:
   """
@@ -2410,9 +2456,9 @@ class read_updated_command_line:
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   """
   def __init__(self,sys_argv):
-  	error="no"
+  	error=False
   	if len(sys_argv) == 1 or sys_argv[1] == "-h" or sys_argv[1] == "--help":
-  		error="yes"
+  		error=True
   	elif sys_argv[1] == "-g":
   		generate_parameter_file_template()
   		print("The parameter file template is successfully generated")
@@ -2421,8 +2467,8 @@ class read_updated_command_line:
   		try :
   			temp=open(sys_argv[1],'r')
   		except:
-  			error="yes"
-  	if error == "yes":
+  			error=True
+  	if error == True:
   		sudheer_banner()
   		CREDBG = '\33[31m' # \33[41m for red background
   		CREDBGEND = '\x1b[0m'
@@ -2436,18 +2482,159 @@ class read_updated_command_line:
   		sys.exit()
 
 
-def print_error(error_messages):
-	"""
-	* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	* error_messages = ["error_message1", "error_message2", etc. ] 
-	*
-    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	"""
-	sudheer_banner()
-	CREDBG = '\33[31m' # \33[41m for red background
-	CREDBGEND = '\x1b[0m'
-	print("************************************** S. Ganisetti **************************************\n")
-	for i in error_messages:
-		print("%s   %s  %s" % (CREDBG, str(i), CREDBGEND))
-	print("\n******************************************************************************************")
-	sys.exit()
+def print_error_message(error_status,error_messages):
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * error_messages = ["error_message1", "error_message2", etc. ] 
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  if error_status == True:
+    sudheer_banner()
+    CREDBG = '\33[31m' # \33[41m for red background
+    CREDBGEND = '\x1b[0m'
+    print("************************************** S. Ganisetti **************************************\n")
+    for i in error_messages:
+      print("%s   %s  %s" % (CREDBG, str(i), CREDBGEND))
+      print("\n******************************************************************************************")
+      sys.exit()
+
+class compute_bond_statistics:
+  """
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  * This class helps to compute the bond statistics 
+  * 
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  """
+  def __init__(self,given_cations_sym2num,ref_config,ref_config_nnl,cur_config_nnl):
+    survived_bonds          = {}
+    new_bonds               = {}
+    broken_bonds            = {}
+    bond_status             = {}
+    switched_bonds__id2count= {}
+    total_bonds             = 0
+    total_new_bonds         = 0
+    total_broken_bonds      = 0
+    total_survived_bonds    = 0
+    total_switched_bonds    = 0
+
+    for i in ref_config.id:
+      if ref_config.type[i] in given_cations_sym2num.values():
+        temp1={i:[]}
+        survived_bonds.update(temp1)
+        new_bonds.update(temp1)
+        broken_bonds.update(temp1)
+
+        temp_broken_bonds  = list(set(ref_config_nnl.nnl[i]) - set(cur_config_nnl.nnl[i]))
+        temp_new_bonds     = list(set(cur_config_nnl.nnl[i]) - set(ref_config_nnl.nnl[i]))
+        temp_survived_bonds= list(set(cur_config_nnl.nnl[i]) & set(ref_config_nnl.nnl[i]))
+
+        # for bond_status = survive
+        if len(temp_broken_bonds) == 0 and len(temp_new_bonds) == 0:
+          temp1={i:"survived_bond"}
+          bond_status.update(temp1)
+          for j in temp_survived_bonds:
+            temp1=survived_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            survived_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_survived_bonds=total_survived_bonds+1
+          temp1={i:0}
+          switched_bonds__id2count.update(temp1)
+        # for bond_status = new
+        elif ref_config_nnl.nnl_count[i] < cur_config_nnl.nnl_count[i]:
+          temp1={i:"new_bond"}
+          bond_status.update(temp1)
+          for j in temp_broken_bonds:
+            temp1=broken_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            broken_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_broken_bonds=total_broken_bonds+1
+          for j in temp_new_bonds:
+            temp1=new_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            new_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_new_bonds=total_new_bonds+1
+          for j in temp_survived_bonds:
+            temp1=survived_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            survived_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_survived_bonds=total_survived_bonds+1
+          total_switched_bonds = total_switched_bonds + len(temp_broken_bonds)
+          temp1={i:len(temp_broken_bonds)}
+          switched_bonds__id2count.update(temp1)
+        # for bond_status = broken
+        elif ref_config_nnl.nnl_count[i] > cur_config_nnl.nnl_count[i]:
+          temp1={i:"broken_bond"}
+          bond_status.update(temp1)
+          for j in temp_broken_bonds:
+            temp1=broken_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            broken_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_broken_bonds=total_broken_bonds+1
+          for j in temp_new_bonds:
+            temp1=new_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            new_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_new_bonds=total_new_bonds+1
+          for j in temp_survived_bonds:
+            temp1=survived_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            survived_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_survived_bonds=total_survived_bonds+1
+          total_switched_bonds = total_switched_bonds + len(temp_new_bonds)
+          temp1={i:len(temp_new_bonds)}
+          switched_bonds__id2count.update(temp1)
+        # for bond_status = switched
+        elif ref_config_nnl.nnl_count[i] == cur_config_nnl.nnl_count[i] and len(temp_broken_bonds) == len(temp_new_bonds):
+          temp1={i:"switched_bond"}
+          bond_status.update(temp1)
+          for j in temp_broken_bonds:
+            temp1=broken_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            broken_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_broken_bonds=total_broken_bonds+1
+          for j in temp_new_bonds:
+            temp1=new_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            new_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_new_bonds=total_new_bonds+1
+          for j in temp_survived_bonds:
+            temp1=survived_bonds[i]
+            temp1.append(j)
+            temp2={i:temp1}
+            survived_bonds.update(temp2)
+            total_bonds=total_bonds+1
+            total_survived_bonds=total_survived_bonds+1
+          total_switched_bonds = total_switched_bonds + len(temp_new_bonds)
+          temp1={i:len(temp_new_bonds)}
+          switched_bonds__id2count.update(temp1)
+    self.total_bonds              = total_bonds
+    self.total_broken_bonds       = total_broken_bonds
+    self.total_new_bonds          = total_new_bonds
+    self.total_switched_bonds     = total_switched_bonds
+    self.total_survived_bonds     = total_survived_bonds
+    self.switched_bonds__id2count = switched_bonds__id2count
+    self.bond_status__id2text     = bond_status
+    self.new_bonds__id2list       = new_bonds
+    self.broken_bonds__id2list    = broken_bonds
+    self.survived_bonds__id2list  = survived_bonds
+

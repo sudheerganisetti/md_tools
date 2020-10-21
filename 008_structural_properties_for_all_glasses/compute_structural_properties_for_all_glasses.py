@@ -18,8 +18,7 @@ if __name__=="__main__":
   cmd1=ganisetti_tools.read_updated_command_line(sys.argv)
   # read parameter file
   read_parameter_file=ganisetti_tools.read_parameter_file(sys.argv[1])
-  if read_parameter_file.error_status == "yes":
-    ganisetti_tools.print_error(read_parameter_file.error_messages)
+  ganisetti_tools.print_error_message(read_parameter_file.error_status,read_parameter_file.error_messages)
 
   cmd=ganisetti_tools.read_command_line(read_parameter_file.all_arguments)
 
@@ -530,7 +529,8 @@ if __name__=="__main__":
       x.append(i[0])
       y.append(i[1])
       z.append(0.5*Na_BA_and_NBA[i]**2)
-      output1.write("%d\t%d\t%d\n" %(i[0],i[1],Na_BA_and_NBA[i]))
+      if Na_BA_and_NBA[i] != 0:
+        output1.write("%d\t%d\t%d\n" %(i[0],i[1],Na_BA_and_NBA[i]))
     # preparing fig
     fig1=plt.figure()
     ax1= fig1.add_subplot(111)
