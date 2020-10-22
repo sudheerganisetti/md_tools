@@ -127,20 +127,31 @@ if __name__=="__main__":
         temp2={(BA_count_for_i,NBA_count_for_i):temp1}
         BA_and_NBA_neighbours_of_Na__Na_list.update(temp2)
 
-    output1.write("# BO_neighbours\tNBO_neighbours\tNumber_Of_Na_atoms\tBroken_Bonds\tSwitched_Bonds\tNew_Bonds\tSurvived_Bonds\n")
+    output1.write("# BO_neighbours\tNBO_neighbours\tNumber_Of_Na_atoms\tNa-O_bonds\tBroken_Bonds\tSwitched_Bonds\tNew_Bonds\tSurvived_Bonds\n")
     for BA_neighbours in range(11):
       for NBA_neighbours in range(11):
         temp1=0
         temp2=0
         temp3=0
         temp4=0
+        temp5=0
         for i in BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)]:
           temp1=temp1 + len(bond_statistics.broken_bonds__id2list[i])
           temp2=temp2 + bond_statistics.switched_bonds__id2count[i]
           temp3=temp3 + len(bond_statistics.new_bonds__id2list[i])
           temp4=temp4 + len(bond_statistics.survived_bonds__id2list[i])
-        output1.write("\t%d\t\t%d\t\t%d\t\t    %d\t\t   %d        \t%d   \t\t%d\n" %(BA_neighbours,NBA_neighbours,len(BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)]),temp1,temp2,temp3,temp4))
+          temp5=temp5 + ref_config_nnl.nnl_count[i]
+        output1.write("\t%d\t\t%d\t\t%d\t\t%d\t\t    %d\t\t   %d        \t%d   \t\t%d\n" %(BA_neighbours,NBA_neighbours,len(BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)]),temp5,temp1,temp2,temp3,temp4))
+    
+    #for i in ref_config.id:
+      #if ref_config.type[i] == Na_type:
+        #print(len(bond_statistics.broken_bonds__id2list[i]),len(bond_statistics.new_bonds__id2list[i]),len(bond_statistics.survived_bonds__id2list[i]))
+        #print(i, bond_statistics.broken_bonds__id2list[i])
+        #print(i, bond_statistics.new_bonds__id2list[i])
+        #print(i, ref_config_nnl.nnl[i])
+
   output1.close()
+
 
 
 

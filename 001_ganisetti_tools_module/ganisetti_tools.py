@@ -2429,7 +2429,7 @@ class generate_parameter_file_template:
     output1.write("# Author : Sudheer Ganisetti\n")
     output1.write("# Date   : %s \n" %(time_now))
     output1.write("# Info   : the parameter file can be used to pass the arguments to the python program upon calling 'ganisetti_tools' module\n")
-    output1.write("           for computing a variety of properties of various glasses prepared with the molecular dynamics simulations\n\n")
+    output1.write("#          for computing a variety of properties of various glasses prepared with the molecular dynamics simulations\n\n")
     output1.write("# all known atoms\n")
     output1.write("known_atoms = O F Si Al P Na Ca Mg Sr Li K V\n\n")
     output1.write("# Known file formats = imd, dump\n")
@@ -2523,7 +2523,11 @@ class compute_bond_statistics:
       if ref_config.type[i] in given_cations_sym2num.values():
         temp1={i:[]}
         survived_bonds.update(temp1)
+        temp1=None 
+        temp1={i:[]}
         new_bonds.update(temp1)
+        temp1=None 
+        temp1={i:[]}
         broken_bonds.update(temp1)
 
         temp_broken_bonds  = list(set(ref_config_nnl.nnl[i]) - set(cur_config_nnl.nnl[i]))
@@ -2539,7 +2543,6 @@ class compute_bond_statistics:
             temp1.append(j)
             temp2={i:temp1}
             survived_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_survived_bonds=total_survived_bonds+1
           temp1={i:0}
           switched_bonds__id2count.update(temp1)
@@ -2552,21 +2555,18 @@ class compute_bond_statistics:
             temp1.append(j)
             temp2={i:temp1}
             broken_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_broken_bonds=total_broken_bonds+1
           for j in temp_new_bonds:
             temp1=new_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             new_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_new_bonds=total_new_bonds+1
           for j in temp_survived_bonds:
             temp1=survived_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             survived_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_survived_bonds=total_survived_bonds+1
           total_switched_bonds = total_switched_bonds + len(temp_broken_bonds)
           temp1={i:len(temp_broken_bonds)}
@@ -2580,27 +2580,24 @@ class compute_bond_statistics:
             temp1.append(j)
             temp2={i:temp1}
             broken_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_broken_bonds=total_broken_bonds+1
           for j in temp_new_bonds:
             temp1=new_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             new_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_new_bonds=total_new_bonds+1
           for j in temp_survived_bonds:
             temp1=survived_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             survived_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_survived_bonds=total_survived_bonds+1
           total_switched_bonds = total_switched_bonds + len(temp_new_bonds)
           temp1={i:len(temp_new_bonds)}
           switched_bonds__id2count.update(temp1)
         # for bond_status = switched
-        elif ref_config_nnl.nnl_count[i] == cur_config_nnl.nnl_count[i] and len(temp_broken_bonds) == len(temp_new_bonds):
+        elif ref_config_nnl.nnl_count[i] == cur_config_nnl.nnl_count[i] and len(temp_broken_bonds) != 0:
           temp1={i:"switched_bond"}
           bond_status.update(temp1)
           for j in temp_broken_bonds:
@@ -2608,26 +2605,27 @@ class compute_bond_statistics:
             temp1.append(j)
             temp2={i:temp1}
             broken_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_broken_bonds=total_broken_bonds+1
           for j in temp_new_bonds:
             temp1=new_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             new_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_new_bonds=total_new_bonds+1
           for j in temp_survived_bonds:
             temp1=survived_bonds[i]
             temp1.append(j)
             temp2={i:temp1}
             survived_bonds.update(temp2)
-            total_bonds=total_bonds+1
             total_survived_bonds=total_survived_bonds+1
           total_switched_bonds = total_switched_bonds + len(temp_new_bonds)
           temp1={i:len(temp_new_bonds)}
           switched_bonds__id2count.update(temp1)
-    self.total_bonds              = total_bonds
+        else:
+          error_status= True
+          error_messages=["some thing is wrong in bond compute routine!"]
+
+    self.total_bonds              = total_broken_bonds+total_survived_bonds
     self.total_broken_bonds       = total_broken_bonds
     self.total_new_bonds          = total_new_bonds
     self.total_switched_bonds     = total_switched_bonds
