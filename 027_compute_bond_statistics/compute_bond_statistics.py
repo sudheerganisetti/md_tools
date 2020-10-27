@@ -79,7 +79,9 @@ if __name__=="__main__":
 
   # **************************************************************************************
   # write bond statistics
-  output1=open(BASE_FILE+str('_bond_statistics.data'),'w')
+  output1=open(BASE_FILE+str('_bond_statistics_v01.data'),'w')
+  output2=open(BASE_FILE+str('_bond_statistics_v02.data'),'w')
+  output3=open(BASE_FILE+str('_bond_statistics_v03.data'),'w')
   output1.write("total bonds                  = %d\n" %(bond_statistics.total_bonds))
   output1.write("total broken bonds and %%    = %d \t %2.2lf\n" %(bond_statistics.total_broken_bonds,bond_statistics.total_broken_bonds/bond_statistics.total_bonds*100.0))
   output1.write("total new bonds and %%       = %d \t %2.2lf\n" %(bond_statistics.total_new_bonds,bond_statistics.total_new_bonds/bond_statistics.total_bonds*100.0))
@@ -127,31 +129,151 @@ if __name__=="__main__":
         temp2={(BA_count_for_i,NBA_count_for_i):temp1}
         BA_and_NBA_neighbours_of_Na__Na_list.update(temp2)
 
-    output1.write("# BO_neighbours\tNBO_neighbours\tNumber_Of_Na_atoms\tNa-O_bonds\tBroken_Bonds\tSwitched_Bonds\tNew_Bonds\tSurvived_Bonds\n")
+    # print the bond statistics of Na atoms based on the number of NBO and BO neighbors
+    output1.write("# BO_neigh  NBO_neigh  tot_Na  tot_NaO  Brok_B  Switchd_B  New_B  Survd_B\n")
+    output2.write("# BO_neigh  NBO_neigh  tot_Na_atoms  Na-O_bonds  tot_Brok_B  BO_Brok_B  ")
+    output2.write("NBO_Brok_B  tot_New_B  BO_New_B  NBO_New_B  tot_Survd_B  BO_Survd_B  NBO_Survived_B\n")
+    output3.write("#tot_BB  tot_BO_BB  tot_NBO_BB  tot_NB  tot_BO_NB  tot_NBO_NB  tot_SB  tot_BO_SB  tot_NBO_SB\n")
+    tot_BO_BB   = 0
+    tot_NBO_BB  = 0
+    tot_BO_NB   = 0
+    tot_NBO_NB  = 0
+    tot_BO_SB   = 0
+    tot_NBO_SB  = 0
+    tot_NaO_BB  = 0
+    tot_NaO_NB  = 0
+    tot_NaO_SB  = 0
+
     for BA_neighbours in range(11):
       for NBA_neighbours in range(11):
-        temp1=0
-        temp2=0
-        temp3=0
-        temp4=0
-        temp5=0
+        tot_BB=0
+        tot_switchB=0
+        tot_NB=0
+        tot_SB=0
+        tot_NaO_bonds=0
+        BA_count_of_new_bonds       = 0
+        NBA_count_of_new_bonds      = 0
+        BA_count_of_broken_bonds    = 0
+        NBA_count_of_broken_bonds   = 0
+        BA_count_of_survived_bonds  = 0
+        NBA_count_of_survived_bonds = 0
         for i in BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)]:
-          temp1=temp1 + len(bond_statistics.broken_bonds__id2list[i])
-          temp2=temp2 + bond_statistics.switched_bonds__id2count[i]
-          temp3=temp3 + len(bond_statistics.new_bonds__id2list[i])
-          temp4=temp4 + len(bond_statistics.survived_bonds__id2list[i])
-          temp5=temp5 + ref_config_nnl.nnl_count[i]
-        output1.write("\t%d\t\t%d\t\t%d\t\t%d\t\t    %d\t\t   %d        \t%d   \t\t%d\n" %(BA_neighbours,NBA_neighbours,len(BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)]),temp5,temp1,temp2,temp3,temp4))
-    
-    #for i in ref_config.id:
-      #if ref_config.type[i] == Na_type:
-        #print(len(bond_statistics.broken_bonds__id2list[i]),len(bond_statistics.new_bonds__id2list[i]),len(bond_statistics.survived_bonds__id2list[i]))
-        #print(i, bond_statistics.broken_bonds__id2list[i])
-        #print(i, bond_statistics.new_bonds__id2list[i])
-        #print(i, ref_config_nnl.nnl[i])
+          tot_BB          = tot_BB        + len(bond_statistics.broken_bonds__id2list[i])
+          tot_switchB     = tot_switchB   + bond_statistics.switched_bonds__id2count[i]
+          tot_NB          = tot_NB        + len(bond_statistics.new_bonds__id2list[i])
+          tot_SB          = tot_SB        + len(bond_statistics.survived_bonds__id2list[i])
+          tot_NaO_bonds   = tot_NaO_bonds + ref_config_nnl.nnl_count[i]
+          
+          for j in bond_statistics.new_bonds__id2list[i]:
+            if j in ref_config_anions_distribution.BA_4CoordFormer_id2list.keys():
+              BA_count_of_new_bonds       = BA_count_of_new_bonds + 1
+              tot_BO_NB                   = tot_BO_NB + 1
+            else: 
+              NBA_count_of_new_bonds      = NBA_count_of_new_bonds +1
+              tot_NBO_NB                  = tot_NBO_NB + 1
+          for j in bond_statistics.broken_bonds__id2list[i]:
+            if j in ref_config_anions_distribution.BA_4CoordFormer_id2list.keys():
+              BA_count_of_broken_bonds    = BA_count_of_broken_bonds + 1
+              tot_BO_BB                   = tot_BO_BB + 1
+            else: 
+              NBA_count_of_broken_bonds   = NBA_count_of_broken_bonds +1
+              tot_NBO_BB                  = tot_NBO_BB + 1
+          for j in bond_statistics.survived_bonds__id2list[i]:
+            if j in ref_config_anions_distribution.BA_4CoordFormer_id2list.keys():
+              BA_count_of_survived_bonds  = BA_count_of_survived_bonds + 1
+              tot_BO_SB                   = tot_BO_SB + 1
+            else: 
+              NBA_count_of_survived_bonds = NBA_count_of_survived_bonds +1
+              tot_NBO_SB                  = tot_NBO_SB + 1
+        tot_NaO_BB = tot_NaO_BB + tot_BB 
+        tot_NaO_NB = tot_NaO_NB + tot_NB 
+        tot_NaO_SB = tot_NaO_SB + tot_SB 
+
+        output1.write("\t%d \t %d \t" %(BA_neighbours,NBA_neighbours))
+        output1.write("%d \t" %(len(BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)])))
+        output1.write("%d \t %d \t   %d \t   %d \t   %d \n" %(tot_NaO_bonds,tot_BB,tot_switchB,tot_NB,tot_SB))
+        output2.write("\t%d\t%d\t" %(BA_neighbours,NBA_neighbours))
+        output2.write("%d \t\t" %(len(BA_and_NBA_neighbours_of_Na__Na_list[(BA_neighbours,NBA_neighbours)])))
+        output2.write("%d \t   %d \t\t %d \t %d \t\t" %(tot_NaO_bonds,tot_BB,BA_count_of_broken_bonds,NBA_count_of_broken_bonds))
+        output2.write("%d \t %d \t   %d \t\t" %(tot_NB,BA_count_of_new_bonds,NBA_count_of_new_bonds))
+        output2.write("%d \t \t%d \t %d \n" %(tot_SB,BA_count_of_survived_bonds,NBA_count_of_survived_bonds))
+    output3.write("  %d \t    %d \t %d \t"  %(tot_NaO_BB,tot_BO_BB,tot_NBO_BB))
+    output3.write(" %d \t %d \t\t %d \t" %(tot_NaO_NB,tot_BO_NB,tot_NBO_NB))
+    output3.write(" %d \t   %d \t\t %d \n" %(tot_NaO_SB,tot_BO_SB,tot_NBO_SB))
+
+    output5=open(BASE_FILE+str('_detailed_BB.data'),'w')
+    output6=open(BASE_FILE+str('_detailed_NB.data'),'w')
+    output7=open(BASE_FILE+str('_detailed_SB.data'),'w')
+    BA_and_NBA_speciation_BB={}
+    BA_and_NBA_speciation_NB={}
+    BA_and_NBA_speciation_SB={}
+    BA_and_NBA_speciation_BB1={}
+    BA_and_NBA_speciation_NB1={}
+    BA_and_NBA_speciation_SB1={}
+    for i in ref_config.id:
+      if ref_config.type[i] == Na_type:
+        # collect detailed broken bonds
+        for j in bond_statistics.broken_bonds__id2list[i]:
+          temp1=( ("Si",ref_config_nnl.nnl_type_sym[j].count("Si")),("Al",ref_config_nnl.nnl_type_sym[j].count("Al")),("P",ref_config_nnl.nnl_type_sym[j].count("P")) )
+          try:
+            temp2={temp1:BA_and_NBA_speciation_BB[temp1]+1}
+          except:
+            temp2={temp1:1}
+          BA_and_NBA_speciation_BB.update(temp2)
+
+        # collect detailed new bonds
+        for j in bond_statistics.new_bonds__id2list[i]:
+          temp1=( ("Si",ref_config_nnl.nnl_type_sym[j].count("Si")),("Al",ref_config_nnl.nnl_type_sym[j].count("Al")),("P",ref_config_nnl.nnl_type_sym[j].count("P")) )
+          try:
+            temp2={temp1:BA_and_NBA_speciation_NB[temp1]+1}
+          except:
+            temp2={temp1:1}
+          BA_and_NBA_speciation_NB.update(temp2)
+
+        # collect detailed survived bonds
+        for j in bond_statistics.survived_bonds__id2list[i]:
+          temp1=( ("Si",ref_config_nnl.nnl_type_sym[j].count("Si")),("Al",ref_config_nnl.nnl_type_sym[j].count("Al")),("P",ref_config_nnl.nnl_type_sym[j].count("P")) )
+          try:
+            temp2={temp1:BA_and_NBA_speciation_SB[temp1]+1}
+          except:
+            temp2={temp1:1}
+          BA_and_NBA_speciation_SB.update(temp2)
+
+    output5.write("# num_Si\tnum_Al\tnum_P\ttot_BB\n")
+    BA_and_NBA_speciation_BB1={k: v for k, v in sorted(BA_and_NBA_speciation_BB.items(), key=lambda item: item[1])}
+    for i in BA_and_NBA_speciation_BB1.keys():
+      for j in i:
+        output5.write("%d\t" %(j[1]))
+      output5.write("\t%d\n" %(BA_and_NBA_speciation_BB1[i]))
+        
+    output6.write("# num_Si\tnum_Al\tnum_P\ttot_NB\n")
+    BA_and_NBA_speciation_NB1={k: v for k, v in sorted(BA_and_NBA_speciation_NB.items(), key=lambda item: item[1])}
+    for i in BA_and_NBA_speciation_NB1.keys():
+      for j in i:
+        output6.write("%d\t" %(j[1]))
+      output6.write("\t%d\n" %(BA_and_NBA_speciation_NB1[i]))
+
+    output7.write("# num_Si\tnum_Al\tnum_P\ttot_SB\n")
+    BA_and_NBA_speciation_SB1={k: v for k, v in sorted(BA_and_NBA_speciation_SB.items(), key=lambda item: item[1])}
+    for i in BA_and_NBA_speciation_SB1.keys():
+      for j in i:
+        output7.write("%d\t" %(j[1]))
+      output7.write("\t%d\n" %(BA_and_NBA_speciation_SB1[i]))
+      
+    output5.close()
+    output6.close()
+    output7.close()
+
+    for i in range(11):
+      for j in range(11):
+        if len(BA_and_NBA_neighbours_of_Na__Na_list[(i,j)]) != 0:
+          output4=open("List_of_Na_atoms_with___BO_"+str(i)+"___NBO_"+str(j)+".data",'w')
+          output4.write("# BO %d \t\t NBO %d\n" %(i,j))
+          for k in BA_and_NBA_neighbours_of_Na__Na_list[(i,j)]:
+            output4.write("%d \n" %(k))
+          output4.close()
 
   output1.close()
-
-
-
+  output2.close()
+  output3.close()
 
