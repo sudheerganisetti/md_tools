@@ -11,7 +11,7 @@
           #                                                                                   # 
           #***********************************************************************************# 
 
-The following figure demonstrates some of the capabilities of the tools that are written under the framework of 'md_tools'. Find the list of tools and their short description following the figure.
+The following figure is prepared with the data that obtained by the use of post-processing tools written under the framework 'md_tools'. The main intension of the figure is to show only the visual capabilities rather than discussing the scientific findings. Therefore, you have to bear with me for presenting the figure without complete details. Please contact the author for any scientific details. Presented the list of tools and their short description following the figure.
 
 ![all_figures_v02](https://user-images.githubusercontent.com/7426968/107627483-a58b6100-6c5f-11eb-85e7-b12abc114505.png)
 Figure description:
@@ -30,11 +30,12 @@ l) Distribution of O at various sites in NAPS glasses
 m) Percentages of O in Al-O-V and V-O-V in Vanadium containing glasses
 n) Extraction of triclusters (CMAS glass)
 o) Influence of F on the network structure of Bio-glasses
+(The figures are generated with [ovito](https://www.ovito.org) and [gnuplot](http://www.gnuplot.info/) software packages)
 
 #                                     Author: Sudheer Ganisetti
 
 The following tools are very useful for analysing various properties of amorphous materials (glasses) with given atomic positions and chemical atom types.
-The main intension of these programs is to post-process the output files of the atomistic simulations (LAMMPS and IMD programs).
+The main intension of these programs is to post-process the output files obtained by the atomistic simulations (LAMMPS and IMD programs).
 
 01) 001_ganisetti_tools_module			: a module with a lot of classes and functions for computing various properties  
 02) 002_compute_glass_density 			: computes the density of a glass  
