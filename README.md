@@ -1,5 +1,3 @@
-#                                     Author: Sudheer Ganisetti
-
 
           #***********************************************************************************# 
           #                                                                                   # 
@@ -13,6 +11,27 @@
           #                                                                                   # 
           #***********************************************************************************# 
 
+The following figure demonstrates some of the capabilities of the tools that are written under the framework of 'md_tools'. Find the list of tools and their short description following the figure.
+
+![all_figures_v02](https://user-images.githubusercontent.com/7426968/107627483-a58b6100-6c5f-11eb-85e7-b12abc114505.png)
+Figure description:
+a) CMAS glass (11096 atoms) with the assignment of various colors to various atom types
+b) Diffusion path of Na in NAP glass
+c) Distribution of Li and K in Vanadium containing glasses
+d) Brding Oxygen (BO) rich network region of NAPS glass
+e) Non-Bridging Oxygen (NBO) rich Channel region of NAPS glass
+f) Demonstrating the role of Na in the presence of Si
+g) Separating the channel and network regions based on BO and NBO for NAPS glass
+h) Identification of clusters in CMAS glass
+i) Computing the presence of Na at various oxgen sites (NAPS glasses)
+j) Percentage of Al-O-Al bonds in CAS glasses 
+k) Pair distribution functions of CMAS glass
+l) Distribution of O at various sites in NAPS glasses
+m) Percentages of O in Al-O-V and V-O-V in Vanadium containing glasses
+n) Extraction of triclusters (CMAS glass)
+o) Influence of F on the network structure of Bio-glasses
+
+#                                     Author: Sudheer Ganisetti
 
 The following tools are very useful for analysing various properties of amorphous materials (glasses) with given atomic positions and chemical atom types.
 The main intension of these programs is to post-process the output files of the atomistic simulations (LAMMPS and IMD programs).
