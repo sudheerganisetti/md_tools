@@ -11,7 +11,7 @@
           #                                                                                   # 
           #***********************************************************************************# 
 
-The following figure is prepared with the data that obtained by the use of post-processing tools written under the framework 'md_tools'. The main intension of the figure is to show only the visual capabilities rather than discussing the scientific findings. Therefore, you have to bear with me for presenting the figure without complete details. Please contact the author for any scientific details. Presented the list of tools and their short description following the figure.
+The following figure is prepared with the data obtained by post-processing tools written under the framework 'md_tools'. The main intention for presenting the figure is to show only the visual capabilities rather than discussing the scientific findings. Therefore, you have to excuse me for not providing complete details of the figure. The tools list and their short description are presented following the figure.
 
 ![all_figures_v02](https://user-images.githubusercontent.com/7426968/107627483-a58b6100-6c5f-11eb-85e7-b12abc114505.png)
 Figure description:
